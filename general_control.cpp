@@ -16,44 +16,64 @@ general_control::~general_control() {
     }
 }
 
-void general_control::start_scan(const QString& drive_letter) {
+void general_control::start_scan(const QString& drive_letter, bool refresh) {
     if (scan_watcher.isRunning()) return;
 
     if (drive_letter.isEmpty()) return;
 
-    current_drive = drive_letter.toUpper();
+    QString current_drive = drive_letter.toUpper();
+
+    if (!refresh && drive_map.contains(current_drive) && drive_map[current_drive].is_scanned) {
+        emit scan_finished(current_drive, drive_map[current_drive].root_idx);
+        return;
+    }
+
     char target_drive = current_drive.toStdString()[0];
 
     emit scan_started(current_drive);
 
     //全局线程池
-    QFuture<scanner::Scan_Result> future = QtConcurrent::run([target_drive]() {
-        return scanner::scan_drive(target_drive);
+    QFuture<scan_task_result> future = QtConcurrent::run([this, target_drive, current_drive]() {
+        scan_task_result res;
+        res.drive_letter = current_drive;
+
+        //底层MFT扫描
+        scanner::Scan_Result raw_data = scanner::scan_drive(target_drive);
+        res.success = raw_data.success;
+
+        if (!raw_data.success) {
+            res.error_message = QString::fromStdString(raw_data.error_message);
+            return res;
+        }
+
+        //将字符串池转移到临时的上下文ctx中
+        res.ctx.string_pool = std::move(raw_data.string_pool);
+
+        //直接在后台线程建树
+        this->build_tree(res.ctx, raw_data, current_drive);
+
+        res.ctx.is_scanned = true;
+        return res;
     });
 
     scan_watcher.setFuture(future);
 }
 
 void general_control::scan_thread_finish() {
-    //从后台获取扫描结果
-    scanner::Scan_Result result = scan_watcher.result();
+    scan_task_result result = scan_watcher.result();
 
     if (!result.success) {
-        emit scan_error(current_drive, QString::fromStdString(result.error_message));
+        emit scan_error(result.drive_letter, result.error_message);
         return;
     }
 
-    //获取盘符
-    drive_content &ctx = drive_map[current_drive];
-    ctx.string_pool = std::move(result.string_pool);
+    drive_map[result.drive_letter] = std::move(result.ctx);
 
-    //构建树
-    build_tree(ctx, result);
-
-    emit scan_finished(current_drive, ctx.root_idx);
+    //通知UI渲染
+    emit scan_finished(result.drive_letter, drive_map[result.drive_letter].root_idx);
 }
 
-void general_control::build_tree(drive_content& ctx, scanner::Scan_Result& raw_data) {
+void general_control::build_tree(drive_content& ctx, scanner::Scan_Result& raw_data, const QString& drive_letter) {
     ctx.memory_tree = std::move(raw_data.nodes);
 
     bool has_root = false;
@@ -68,7 +88,7 @@ void general_control::build_tree(drive_content& ctx, scanner::Scan_Result& raw_d
         Optimized_Node fake_root;
         fake_root.is_dir = 1;
         fake_root.size = 0;
-        fake_root.name_offset = 0;  // 名字为空，不影响 UI 绝对路径的生成
+        fake_root.name_offset = 0;  //名字为空,不影响UI绝对路径的生成
         fake_root.name_len = 0;
 
         // 将虚拟根节点推入树中
@@ -135,7 +155,7 @@ void general_control::build_tree(drive_content& ctx, scanner::Scan_Result& raw_d
     QList<file_size_task> tasks;
     uint32_t child_idx = ctx.memory_tree[ctx.root_idx].first_child;
     while (child_idx != INVALID_INDEX) {
-        collect_task(ctx, child_idx, current_drive + ":\\", tasks);
+        collect_task(ctx, child_idx, drive_letter + ":\\", tasks);
         child_idx = ctx.memory_tree[child_idx].next_sibling;
     }
 
@@ -243,6 +263,7 @@ QList<UI_Block> general_control::get_content(const QString& drive_letter, uint32
         block.total_file = child_node.total_file;
         block.immediate_file = child_node.immediate_file;
         block.file_index = child_idx;
+        block.parent_index = child_node.parent_index;
 
         //时间解析
         if (child_node.last_modified != 0) {

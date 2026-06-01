@@ -4,6 +4,7 @@
 #include "helper.h"
 #include "general_control.h"
 #include "datatype.h"
+#include "breadcrumbwidget.h"
 
 #include <QMainWindow>
 #include <QLabel>
@@ -30,6 +31,8 @@ private slots:
 
     void on_refreshDriveBtn_clicked();
 
+    void onTableDoubleClicked(const QModelIndex &index);
+
 private:
     Ui::MainWindow *ui;
     // 生成drivelist
@@ -37,7 +40,8 @@ private:
     // 文件表格
     QStandardItemModel *m_fileDataModel = nullptr;
     QSortFilterProxyModel *m_proxyModel = nullptr;
-    void appendDriveData(const QList<QString> &info, const uint32_t &file_index, const qint64 &size);
+    void appendfileData(const UI_Block &block);
+    void refreshTable(uint32_t targetIndex);
     // 获取文件
     general_control *m_generalControl = nullptr;
     void onScanStarted(const QString& drive_letter);

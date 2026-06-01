@@ -15,6 +15,17 @@ const QString style_DriveCardWidget_hover =
     "DriveCardWidget { background-color: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 8px; }";
 const QString style_DriveCardWidget_clicked =
     "DriveCardWidget { background-color: #f8fafc; border: 2px solid #3b82f6; border-radius: 8px; }";
+const QString style_breadcrumbWidget_end =
+    "QPushButton { border: none; background: transparent; color: black; font-weight: bold; font-size: 14px; }";
+const QString style_breadcrumbWidget_normal =
+    "QPushButton { border: none; background: transparent; color: #0078D7; font-size: 14px; } "
+    "QPushButton:hover { text-decoration: underline; }";
+const QString style_breadcrumbWidget_arrow =
+    "color: #888888; font-weight: bold;";
+const QString style_breadcrumbWidget_text =
+    "color: #888888; font-weight: bold;";
+const QString style_breadcrumbWidget_background =
+    ".breadcrumbWidget{ background-color: #ffffff;}";
 
 
 

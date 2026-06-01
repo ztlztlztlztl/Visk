@@ -3,6 +3,8 @@ project(Visk LANGUAGES CXX)
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Concurrent)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 qt_standard_project_setup()
 
 qt_add_executable(Visk
@@ -18,6 +20,8 @@ qt_add_executable(Visk
     helper.h
     helper.cpp
     constants.h
+    breadcrumbwidget.h
+    breadcrumbwidget.cpp
 )
 
 target_link_libraries(Visk

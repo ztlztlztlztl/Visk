@@ -25,14 +25,22 @@ struct drive_content {
     bool is_scanned = false;
 };
 
+//后台任务
+struct scan_task_result {
+    bool success = false;
+    QString drive_letter;
+    QString error_message;
+    drive_content ctx;
+};
+
 class general_control : public QObject {
     Q_OBJECT
 public:
     explicit general_control(QObject *parent = nullptr);
     ~general_control();
 
-    //启动扫描，输入C、D、E即可
-    void start_scan(const QString& drive_letter);
+    //启动扫描，输入C、D、E即可；refresh参数决定是否对已扫描过的磁盘重新扫描
+    void start_scan(const QString& drive_letter, bool refresh = false);
 
     //获取打包内容
     QList<UI_Block> get_content(const QString& drive_letter, uint32_t target_index);
@@ -68,10 +76,9 @@ private slots:
 
 private:
     //建树相关
-    void build_tree(drive_content& ctx, scanner::Scan_Result& raw_data);
+    void build_tree(drive_content& ctx, scanner::Scan_Result& raw_data, const QString& drive_letter);
     uint64_t caculate_size(drive_content& ctx, uint32_t node_idx);
     void collect_task(drive_content& ctx, uint32_t node_idx, const QString& current_path, QList<file_size_task>& task_list);
-    QString current_drive;
 
     //搜索辅助
     void search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result);
@@ -90,7 +97,7 @@ private:
     QHash<QString, drive_content> drive_map;
 
     //管理异步任务
-    QFutureWatcher<scanner::Scan_Result> scan_watcher;
+    QFutureWatcher<scan_task_result> scan_watcher;
 
     //物理修改器实例化
     filemanager file_worker;

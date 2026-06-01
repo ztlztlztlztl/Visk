@@ -1,5 +1,5 @@
 #include "helper.h"
-
+#include <windows.h>
 
 namespace Helper {
     QList<DriveInfo> getAllDrives(){
@@ -47,5 +47,28 @@ namespace Helper {
         }
         return QLocale::system().toString(file_memory, 'f', 1) + unit;
     }
+
+    QString getFileTypeString(const QString& fileName, bool isDirectory)
+    {
+        if (isDirectory) return QStringLiteral("文件夹");
+
+        SHFILEINFOW sfi = { 0 };
+        DWORD fileAttributes = FILE_ATTRIBUTE_NORMAL;
+        SHGetFileInfoW(
+            (LPCWSTR)fileName.utf16(),
+            fileAttributes,
+            &sfi,
+            sizeof(sfi),
+            SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES
+            );
+        QString typeStr = QString::fromWCharArray(sfi.szTypeName);
+        if (typeStr.isEmpty()) {
+            return QStringLiteral("文件");
+        }
+        return typeStr;
+    }
+
+
+
 }
 

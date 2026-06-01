@@ -18,7 +18,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>200</y>
+      <y>40</y>
       <width>251</width>
       <height>121</height>
      </rect>
@@ -27,8 +27,8 @@
    <widget class="QPushButton" name="refreshDriveBtn">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>170</y>
+      <x>30</x>
+      <y>10</y>
       <width>80</width>
       <height>18</height>
      </rect>
@@ -37,54 +37,13 @@
      <string>刷新</string>
     </property>
    </widget>
-   <widget class="QFrame" name="breadcrumbDisplayFrame">
-    <property name="geometry">
-     <rect>
-      <x>310</x>
-      <y>270</y>
-      <width>241</width>
-      <height>51</height>
-     </rect>
-    </property>
-    <property name="frameShape">
-     <enum>QFrame::Shape::StyledPanel</enum>
-    </property>
-    <property name="frameShadow">
-     <enum>QFrame::Shadow::Raised</enum>
-    </property>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <widget class="QLabel" name="textLabel">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>当前路径：</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QFrame" name="breadcrumbAreaFrame">
-       <property name="frameShape">
-        <enum>QFrame::Shape::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Shadow::Raised</enum>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
-      <x>90</x>
-      <y>340</y>
-      <width>581</width>
-      <height>206</height>
+      <x>40</x>
+      <y>170</y>
+      <width>631</width>
+      <height>371</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -99,6 +58,16 @@
      </item>
     </layout>
    </widget>
+   <widget class="breadcrumbWidget" name="breadcrumbline" native="true">
+    <property name="geometry">
+     <rect>
+      <x>350</x>
+      <y>30</y>
+      <width>271</width>
+      <height>61</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -112,6 +81,14 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>breadcrumbWidget</class>
+   <extends>QWidget</extends>
+   <header>breadcrumbwidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

@@ -1,6 +1,8 @@
 #ifndef HELPER_H
 #define HELPER_H
 
+#include <windows.h>
+#include <shellapi.h>
 
 #include <QString>
 #include <QList>
@@ -21,7 +23,7 @@ namespace Helper {
 
     QString transToMemory(qint64 size);
 
-
+    QString getFileTypeString(const QString& fileName, bool isDirectory);
 
 }
 
