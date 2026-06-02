@@ -14,29 +14,6 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QListWidget" name="driveList">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>40</y>
-      <width>251</width>
-      <height>121</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="refreshDriveBtn">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>10</y>
-      <width>80</width>
-      <height>18</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>刷新</string>
-    </property>
-   </widget>
    <widget class="QFrame" name="frame">
     <property name="geometry">
      <rect>
@@ -61,10 +38,20 @@
    <widget class="breadcrumbWidget" name="breadcrumbline" native="true">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>30</y>
+      <x>390</x>
+      <y>60</y>
       <width>271</width>
       <height>61</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="driveListZone" name="driveZone" native="true">
+    <property name="geometry">
+     <rect>
+      <x>60</x>
+      <y>30</y>
+      <width>311</width>
+      <height>121</height>
      </rect>
     </property>
    </widget>
@@ -86,6 +73,12 @@
    <class>breadcrumbWidget</class>
    <extends>QWidget</extends>
    <header>breadcrumbwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>driveListZone</class>
+   <extends>QWidget</extends>
+   <header>drivelistzone.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

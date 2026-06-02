@@ -22,6 +22,12 @@ qt_add_executable(Visk
     constants.h
     breadcrumbwidget.h
     breadcrumbwidget.cpp
+    drivelistzone.h
+    drivelistzone.cpp
+    UsbDeviceMonitor.cpp
+    UsbDeviceMonitor.h
+    UsbScanner.cpp
+    UsbScanner.h
 )
 
 target_link_libraries(Visk

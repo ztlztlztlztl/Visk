@@ -12,7 +12,18 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     // 设置 drivelist
-    ui->driveList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    connect(ui->driveZone, &driveListZone::globalRefreshRequested, this, [this]() {
+        qDebug() << "【主窗口】收到全局盘符刷新请求！正在获取系统硬盘...";
+        QList<Helper::DriveInfo> drives = Helper::getAllDrives();
+        ui->driveZone->updateDriveList(drives);
+    });
+    connect(ui->driveZone, &driveListZone::scanDriveRequested,
+            this, [this](const QString &driveLetter, bool forceRefresh) {
+                qDebug() << "【主窗口】收到扫描请求！盘符:" << driveLetter << " 是否强刷:" << forceRefresh;
+                onScanStarted(driveLetter);
+                m_generalControl->start_scan(driveLetter, forceRefresh);
+            });
+    emit ui->driveZone->globalRefreshRequested();
     // 设置 breadcrumb
     ui->breadcrumbline->setLabel("等待");
     // 设置 tableview 的表头
@@ -37,8 +48,6 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onTableDoubleClicked);
     connect(ui->breadcrumbline, &breadcrumbWidget::pathClicked,
             this, &MainWindow::refreshTable);
-    // 扫描所有盘符
-    refreshDriveList();
     // 信号接收们
     m_generalControl = new general_control(this);
     connect(m_generalControl, &general_control::scan_started,
@@ -54,23 +63,6 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-
-void MainWindow::refreshDriveList(){
-    ui->driveList->clear();
-    QList<Helper::DriveInfo> drives = Helper::getAllDrives();
-    for (const Helper::DriveInfo &drive : drives){
-        DriveCardWidget *driveCard = new DriveCardWidget(drive, this);
-        QListWidgetItem *item = new QListWidgetItem();
-        item->setSizeHint(QSize(200, 70));
-        ui->driveList->addItem(item);
-        ui->driveList->setItemWidget(item, driveCard);
-        // 接受信号
-        connect(driveCard, &DriveCardWidget::cardClicked,
-                this, [this](const QString &letter){
-            m_generalControl->start_scan(letter);
-        });
-    }
-}
 
 void MainWindow::onTableDoubleClicked(const QModelIndex &index)
 {
@@ -130,15 +122,7 @@ void MainWindow::onScanStarted(const QString& drive_letter){
     ui->breadcrumbline->setLabel("正在扫描" + drive_letter + "盘");
     ui->breadcrumbline->initRoot();
     // 第二步，锁死刷新和扫描按钮
-    ui->refreshDriveBtn->setEnabled(false);
-    int itemCount = ui->driveList->count();
-    for (int i = 0; i < itemCount;++i){
-        DriveCardWidget *card =
-            qobject_cast<DriveCardWidget*>(ui->driveList->itemWidget(ui->driveList->item(i)));
-        if (card){
-            card->setEnabled(false);
-        }
-    }
+    ui->driveZone->setEnabled(false);
     ui->breadcrumbline->setEnabled(false);
 
 
@@ -152,15 +136,7 @@ void MainWindow::onScanFinished(const QString& drive_letter, uint32_t root_index
     ui->breadcrumbline->initRoot();
     ui->breadcrumbline->pushNode(drive_letter + "盘", root_index);
     // 第二步，恢复刷新和扫描按钮
-    ui->refreshDriveBtn->setEnabled(true);
-    int itemCount = ui->driveList->count();
-    for (int i = 0; i < itemCount;++i){
-        DriveCardWidget *card =
-            qobject_cast<DriveCardWidget*>(ui->driveList->itemWidget(ui->driveList->item(i)));
-        if (card){
-            card->setEnabled(true);
-        }
-    }
+    ui->driveZone->setEnabled(true);
     ui->breadcrumbline->setEnabled(true);
     // 第三步，循环添加信息
     refreshTable(root_index);
@@ -171,15 +147,7 @@ void MainWindow::onScanError(const QString& drive_letter, const QString& error_m
     // 第一步，清空原有数据
     m_fileDataModel->removeRows(0, m_fileDataModel->rowCount());
     // 第二步，恢复刷新和扫描按钮
-    ui->refreshDriveBtn->setEnabled(true);
-    int itemCount = ui->driveList->count();
-    for (int i = 0; i < itemCount;++i){
-        DriveCardWidget *card =
-            qobject_cast<DriveCardWidget*>(ui->driveList->itemWidget(ui->driveList->item(i)));
-        if (card){
-            card->setEnabled(true);
-        }
-    }
+    ui->driveZone->setEnabled(true);
     ui->breadcrumbline->setEnabled(true);
     // 第三步，报错
     qDebug() << error_message;
@@ -190,68 +158,5 @@ void MainWindow::onScanError(const QString& drive_letter, const QString& error_m
 
 
 
-DriveCardWidget::DriveCardWidget(const Helper::DriveInfo &drive, QWidget *parent)
-    : QWidget(parent)
-{
-    this->setAttribute(Qt::WA_StyledBackground, true);
-    m_letter = drive.letter;
-    m_total = drive.totalBytes;
-    m_free = drive.freeBytes;
 
-    m_lblTitle = new QLabel(drive.letter + " 盘  (" + drive.name + ")", this);
-    double totalGB = m_total / (1024.0 * 1024.0 * 1024.0);
-    double freeGB =  m_free/ (1024.0 * 1024.0 * 1024.0);
-    QString totalStr = QString::number(totalGB, 'f', 1) + " GB";
-    QString freeStr = QString::number(freeGB, 'f', 1) + " GB";
-    m_lblDetail = new QLabel(freeStr + "/" + totalStr, this);
-
-    m_lblTitle->setStyleSheet(Constants::style_drivecard_lblTitle);
-    m_lblDetail->setStyleSheet(Constants::style_drivecard_lblDetail);
-
-    QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->addWidget(m_lblTitle);
-    layout->addWidget(m_lblDetail);
-    layout->setContentsMargins(16, 12, 16, 12); // 设置四周留白
-
-    this->setStyleSheet(Constants::style_DriveCardWidget_normal);
-}
-
-void DriveCardWidget::mousePressEvent(QMouseEvent *event) {
-    if (event->button() == Qt::LeftButton) {
-        this->setStyleSheet(Constants::style_DriveCardWidget_clicked);
-    } else {
-        QWidget::mousePressEvent(event);
-    }
-}
-
-void DriveCardWidget::mouseReleaseEvent(QMouseEvent *event)
-{
-    if (event->button() == Qt::LeftButton) {
-        this->setStyleSheet(Constants::style_DriveCardWidget_hover);
-        emit cardClicked(m_letter); // 触发信号
-        event->accept();
-    }
-    QWidget::mouseReleaseEvent(event);
-}
-
-void DriveCardWidget::enterEvent(QEnterEvent *event)
-{
-    // 鼠标放上去时变成浅灰色
-    this->setStyleSheet(Constants::style_DriveCardWidget_hover);
-    QWidget::enterEvent(event);
-}
-
-void DriveCardWidget::leaveEvent(QEvent *event)
-{
-    // 鼠标恢复原状
-    this->setStyleSheet(Constants::style_DriveCardWidget_normal);
-    QWidget::leaveEvent(event);
-}
-
-
-
-void MainWindow::on_refreshDriveBtn_clicked()
-{
-    refreshDriveList();
-}
 

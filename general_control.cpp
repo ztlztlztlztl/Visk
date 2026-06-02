@@ -7,6 +7,15 @@ general_control::general_control(QObject *parent) : QObject(parent) {
     //将后台线程的完成信号连接到主线程的槽函数
     connect(&scan_watcher, &QFutureWatcher<scanner::Scan_Result>::finished,
             this, &general_control::scan_thread_finish);
+
+    // ---- U盘热插拔监听 --------------------------------------------------
+    m_usbMonitor.setOnDeviceArrived([this](std::wstring) {
+        emit usb_device_changed();
+    });
+    m_usbMonitor.setOnDeviceRemoved([this](std::wstring) {
+        emit usb_device_changed();
+    });
+    m_usbMonitor.start();
 }
 
 general_control::~general_control() {

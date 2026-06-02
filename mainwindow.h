@@ -29,14 +29,11 @@ public:
 
 private slots:
 
-    void on_refreshDriveBtn_clicked();
 
     void onTableDoubleClicked(const QModelIndex &index);
 
 private:
     Ui::MainWindow *ui;
-    // 生成drivelist
-    void refreshDriveList();
     // 文件表格
     QStandardItemModel *m_fileDataModel = nullptr;
     QSortFilterProxyModel *m_proxyModel = nullptr;
@@ -53,28 +50,6 @@ private:
 
 
 
-class DriveCardWidget : public QWidget{
-    Q_OBJECT
-public:
-    DriveCardWidget(const Helper::DriveInfo &drive, QWidget *parent = nullptr);
-
-signals:
-    void cardClicked(const QString &letter);
-
-protected:
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void enterEvent(QEnterEvent *event) override;
-    void leaveEvent(QEvent *event) override;
-
-private:
-    QString m_letter;
-    qint64 m_total; // GB
-    qint64 m_free; // GB
-    QLabel *m_lblTitle;
-    QLabel *m_lblDetail;
-
-};
 
 
 

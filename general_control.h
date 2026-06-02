@@ -10,6 +10,7 @@
 #include "datatype.h"
 #include "scanner.h"
 #include "filemanager.h"
+#include "UsbDeviceMonitor.h"
 
 //并发任务结构体
 struct file_size_task {
@@ -71,6 +72,9 @@ signals:
     void delete_finished();
     void paste_finished();
 
+    //U盘热插拔信号
+    void usb_device_changed();
+
 private slots:
     void scan_thread_finish();
 
@@ -98,6 +102,9 @@ private:
 
     //管理异步任务
     QFutureWatcher<scan_task_result> scan_watcher;
+
+    //U盘热插拔监听
+    UsbDeviceMonitor m_usbMonitor;
 
     //物理修改器实例化
     filemanager file_worker;
