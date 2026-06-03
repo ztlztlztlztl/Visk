@@ -72,7 +72,15 @@ void MainWindow::onTableDoubleClicked(const QModelIndex &index)
     QModelIndex typeColumnIndex = index.siblingAtColumn(2);
     bool isDir = typeColumnIndex.data(Qt::UserRole + 1).toBool();
     if (!isDir) {
-        qDebug() << "双击了普通文件，不执行下沉操作。";
+        QString currentDir = ui->breadcrumbline->getAbsolutePath();
+        QString fileName = index.siblingAtColumn(0).data(Qt::UserRole + 0).toString();
+        QString filePath = QDir(currentDir).filePath(fileName);
+        qDebug() << "路径为：" << filePath;
+        bool success = QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
+
+        if (!success) {
+            qDebug() << "打开失败！";
+        }
         return;
     }
     QModelIndex nameColumnIndex = index.siblingAtColumn(0);

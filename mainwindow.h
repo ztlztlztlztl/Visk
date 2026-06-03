@@ -12,6 +12,8 @@
 #include <QEnterEvent>
 #include <QStandardItemModel>
 #include <QSortFilterProxyModel>
+#include <QDesktopServices>
+#include <QUrl>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
