@@ -55,6 +55,9 @@ public:
     //idx->name
     QString get_node_name(const QString& drive_letter, uint32_t node_index);
 
+    //直接获取idx的内容
+    UI_Block get_target_content(const QString& drive_letter, uint32_t target_index);
+
     //文件操作函数
     bool renameFile(const file_location& target, const QString& new_name);
     bool deleteFile(const QList<file_location>& targets);
