@@ -28,6 +28,8 @@ qt_add_executable(Visk
     UsbDeviceMonitor.h
     UsbScanner.cpp
     UsbScanner.h
+    treemapengine.h
+    treemapengine.cpp
 )
 
 target_link_libraries(Visk
