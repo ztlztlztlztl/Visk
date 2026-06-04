@@ -92,6 +92,15 @@ QString breadcrumbWidget::getAbsolutePath() const {
     return fullPathList.join("/");
 }
 
+QString breadcrumbWidget::getRootLetter() const {
+    if (m_pathStack.isEmpty()) {
+        return QString();
+    }
+    QString root = m_pathStack[0].first[0];
+    return root;
+
+}
+
 
 
 

@@ -28,6 +28,12 @@ qt_add_executable(Visk
     UsbDeviceMonitor.h
     UsbScanner.cpp
     UsbScanner.h
+    filedisplaywidget.h
+    filedisplaywidget.cpp
+    tablestylewidget.h
+    tablestylewidget.cpp
+    filedisplaymodel.h
+    filedisplaymodel.cpp
 )
 
 target_link_libraries(Visk

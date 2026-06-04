@@ -5,6 +5,7 @@
 #include "general_control.h"
 #include "datatype.h"
 #include "breadcrumbwidget.h"
+#include "filedisplaywidget.h"
 
 #include <QMainWindow>
 #include <QLabel>
@@ -31,15 +32,11 @@ public:
 
 private slots:
 
-
-    void onTableDoubleClicked(const QModelIndex &index);
+    void handleFileDoubleClicked(QString name, uint32_t index, bool isDir);
 
 private:
     Ui::MainWindow *ui;
     // 文件表格
-    QStandardItemModel *m_fileDataModel = nullptr;
-    QSortFilterProxyModel *m_proxyModel = nullptr;
-    void appendfileData(const UI_Block &block);
     void refreshTable(uint32_t targetIndex);
     // 获取文件
     general_control *m_generalControl = nullptr;

@@ -71,14 +71,7 @@
         </property>
         <layout class="QGridLayout" name="gridLayout">
          <item row="0" column="0">
-          <widget class="QTableView" name="filesTableView">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>1</verstretch>
-            </sizepolicy>
-           </property>
-          </widget>
+          <widget class="fileDisplayer" name="fileDisplayerWidget" native="true"/>
          </item>
         </layout>
        </widget>
@@ -110,6 +103,12 @@
    <class>driveListZone</class>
    <extends>QWidget</extends>
    <header>drivelistzone.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>fileDisplayer</class>
+   <extends>QWidget</extends>
+   <header>filedisplaywidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
