@@ -574,6 +574,57 @@ uint32_t general_control::update_memory_after_copy(drive_content& ctx, uint32_t 
     return new_index;
 }
 
+bool general_control::setClipboard(const QList<file_location>& targets, filemanager::clipboard_operation operation) {
+    if (operation == filemanager::clipboard_operation::None || targets.isEmpty()) {
+        m_clipboard_targets.clear();
+        m_current_op = filemanager::clipboard_operation::None;
+        return true;
+    }
+
+    QList<file_location> valid_targets;
+
+    //逐一校验目标
+    for (const file_location& location : targets) {
+        if (!drive_map.contains(location.drive)) {
+            qDebug() << "未知盘符" << location.drive;
+            continue;
+        }
+
+        const drive_content& ctx = drive_map[location.drive];
+
+        if (location.index == INVALID_INDEX || location.index >= ctx.memory_tree.size()) {
+            qDebug() << "越界/失效的Index:" << location.index;
+            continue;
+        }
+
+        if (location.index == ctx.root_idx) {
+            qDebug() << "不允许对整个盘符根目录执行操作";
+            continue;
+        }
+
+        file_location valid_loc;
+        valid_loc.drive = location.drive;
+        valid_loc.index = location.index;
+        valid_targets.append(valid_loc);
+    }
+
+    if (valid_targets.isEmpty()) {
+        qDebug() << "cnm,全是非法数据";
+        m_clipboard_targets.clear();
+        m_current_op = filemanager::clipboard_operation::None;
+        return false;
+    }
+
+    m_clipboard_targets = valid_targets;
+    m_current_op = operation;
+
+    qDebug() << "操作:"
+             << (operation == filemanager::clipboard_operation::Copy ? "Copy" : "Cut")
+             << " | 有效文件数:" << m_clipboard_targets.size();
+
+    return true;
+}
+
 bool general_control::execute_paste(const file_location& dest_folder) {
     if (m_clipboard_targets.isEmpty() || m_current_op == filemanager::clipboard_operation::None) {
         return false;
@@ -764,7 +815,7 @@ bool general_control::change_file_extension(const file_location& target, const Q
     QString base_name;
     int dot_idx = old_name.lastIndexOf('.');
 
-    if (dot_idx) {
+    if (dot_idx > 0) {
         base_name = old_name.left(dot_idx);
     }
     else {
