@@ -85,6 +85,13 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onScanFinished);
     connect(m_generalControl, &general_control::scan_error,
             this, &MainWindow::onScanError);
+    connect(m_fileIsland, &fileIslandWidget::requestDelete, this, [=](const QList<file_location>& targets) {
+        // 直接调后端
+        bool success = m_generalControl->deleteFile(targets);
+        if (success) {
+            qDebug() << "删除成功，内存树已同步！";
+        }
+    });
 
 
 
