@@ -245,7 +245,7 @@ QString general_control::get_node_name(const QString& drive_letter, uint32_t nod
     if (!drive_map.contains(drive_letter)) return "";
     const drive_content& ctx = drive_map[drive_letter];
 
-    if (node_index == INVALID_INDEX || node_index >= ctx.string_pool.size()) return "";
+    if (node_index == INVALID_INDEX || node_index >= ctx.memory_tree.size()) return "";
     const Optimized_Node& node = ctx.memory_tree[node_index];
     return QString::fromWCharArray(&ctx.string_pool[node.name_offset], node.name_len);
 }
@@ -297,7 +297,9 @@ QString general_control::get_absolute_path(const QString& drive_letter, uint32_t
     uint32_t current_idx = node_index;
 
     while(current_idx != INVALID_INDEX) {
-        if (current_idx != INVALID_INDEX) path_part.prepend(get_node_name(drive_letter, current_idx));
+        if (current_idx != ctx.root_idx) {
+            path_part.prepend(get_node_name(drive_letter, current_idx));
+        }
         current_idx = ctx.memory_tree[current_idx].parent_index;
     }
 
@@ -357,7 +359,10 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
     bool all_success = true;
 
     for (const file_location& location : std::as_const(targets)) {
-        if (!drive_map.contains(location.drive)) continue;
+        if (!drive_map.contains(location.drive)) {
+            all_success = false;
+            continue;
+        }
         //获取绝对路径
         drive_content& ctx =drive_map[location.drive];
         QString absolute_path = get_absolute_path(location.drive, location.index);
@@ -365,6 +370,11 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
             update_memory_after_delete(ctx, location.index);
         }
         else {
+            QFileInfo check_info(absolute_path);
+            qDebug() << "删除失败";
+            qDebug() << "尝试删除的绝对路径:" << absolute_path;
+            qDebug() << "该路径在硬盘上是否存在:" << check_info.exists();
+            qDebug() << "是否有只读属性:" << !check_info.isWritable();
             all_success = false;
         }
     }
