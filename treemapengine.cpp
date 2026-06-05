@@ -61,7 +61,7 @@ double TreemapEngine::worst_ratio(
     const std::vector<Entry>& row,
     double short_side)
 {
-    if (short_side <= 0.0) return std::numeric_limits<double>::max();
+    if (short_side <= 0.0) return (std::numeric_limits<double>::max)();
 
     double worst = 0.0;
     const double s2 = short_side * short_side;
@@ -109,7 +109,7 @@ void TreemapEngine::squarify(
     // ── 贪心填行 ──
     size_t  row_end    = start;       // 行结束下标（不含）
     double  row_sum    = 0.0;         // 行内归一化面积累加
-    double  prev_worst = std::numeric_limits<double>::max();
+    double  prev_worst = (std::numeric_limits<double>::max)();
 
     for (size_t i = start; i < entries.size(); ++i) {
         // 临时行：当前行 + 新条目
