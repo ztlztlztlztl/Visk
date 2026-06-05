@@ -8,7 +8,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , ui(new Ui::MainWindow), m_currentFileLocation(file_location())
 {
     ui->setupUi(this);
 
@@ -59,8 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(ui->driveZone, &driveListZone::scanDriveRequested,
             this, [this](const QString &driveLetter, bool forceRefresh) {
-                qDebug() << "【主窗口】收到扫描请求！盘符:" << driveLetter << " 是否强刷:" << forceRefresh;
-                m_fileIsland->switchDrive(ui->breadcrumbline->getRootLetter());
+                m_fileIsland->switchDrive(driveLetter);
                 onScanStarted(driveLetter);
                 m_generalControl->start_scan(driveLetter, forceRefresh);
             });
@@ -78,17 +77,26 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->fileDisplayerWidget, &fileDisplayer::onFileDoubleClicked,
             this, &MainWindow::handleFileDoubleClicked);
     connect(ui->breadcrumbline, &breadcrumbWidget::pathClicked,
-            this, &MainWindow::refreshTable);
+            this, &MainWindow::navigateTo);
     connect(m_generalControl, &general_control::scan_started,
             this, &MainWindow::onScanStarted);
     connect(m_generalControl, &general_control::scan_finished,
             this, &MainWindow::onScanFinished);
     connect(m_generalControl, &general_control::scan_error,
             this, &MainWindow::onScanError);
+    connect(m_fileIsland, &fileIslandWidget::filesDropped, this, [=](const QList<file_location>& locs) {
+        for (const file_location& loc : locs) {
+            UI_Block info = m_generalControl->get_target_content(loc.drive, loc.index);
+            if (info.file_index != INVALID_INDEX) {
+                m_fileIsland->addFileToCurrentIsland(info.file_name, info.file_index, m_generalControl->get_absolute_path(loc.drive, loc.index));
+            }
+        }
+    });
     connect(m_fileIsland, &fileIslandWidget::requestDelete, this, [=](const QList<file_location>& targets) {
         // 直接调后端
         bool success = m_generalControl->deleteFile(targets);
         if (success) {
+            navigateTo(m_currentFileLocation);
             qDebug() << "删除成功，内存树已同步！";
         }
     });
@@ -104,67 +112,64 @@ MainWindow::~MainWindow()
 }
 
 
-void MainWindow::handleFileDoubleClicked(QString name, uint32_t index, bool isDir)
-{
+void MainWindow::handleFileDoubleClicked(QString name, uint32_t index, bool isDir) {
     qDebug() << "【主窗口】捕捉到双击信号！文件名:" << name << " 目录?:" << isDir;
 
+    file_location targetLoc = {m_currentFileLocation.drive, index};
+
     if (!isDir) {
-        // 如果是文件，直接打开
-        QString currentDir = ui->breadcrumbline->getAbsolutePath();
-        QString filePath = QDir(currentDir).filePath(name);
+        QString filePath = m_generalControl->get_absolute_path(targetLoc.drive, targetLoc.index);
         qDebug() << "准备调用系统打开路径：" << filePath;
-        bool success = QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
-        if (!success) {
-            qDebug() << "打开失败！";
-        }
+        QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
         return;
     }
-
-    // 如果是文件夹，更新面包屑，并刷新表格
-    qDebug() << "【双击下沉】准备进入文件夹:" << name << " 节点序号:" << index;
-    ui->breadcrumbline->pushNode(name, index);
-    refreshTable(index);
+    qDebug() << "【双击下沉】准备进入文件夹:" << name;
+    navigateTo(targetLoc);
 }
 
 
 
-void MainWindow::refreshTable(uint32_t targetIndex){
-    QString driveLetter = ui->breadcrumbline->getRootLetter();
+void MainWindow::navigateTo(const file_location& loc) {
+    if (loc.index == INVALID_INDEX) return;
+    m_currentFileLocation = loc;
 
-    // 拿到后端的数据
-    QList<UI_Block> fileDatas = m_generalControl->get_content(driveLetter, targetIndex);
-    qDebug() << " 共找到:" << fileDatas.count() << "个子项";
-
-    // 🌟 仅仅只需要这一行代码，所有的排序、更新、UI渲染全部自动搞定！
+    QList<UI_Block> fileDatas = m_generalControl->get_content(loc.drive, loc.index);
     ui->fileDisplayerWidget->setFiles(fileDatas);
-    ui->fileDisplayerWidget->setCurrentPath(ui->breadcrumbline->getAbsolutePath());
+
+    QString currentAbsPath = m_generalControl->get_absolute_path(loc.drive, loc.index);
+    ui->fileDisplayerWidget->setCurrentPath(currentAbsPath);
+
+    QList<file_location> rawChain = m_generalControl->get_path_chain(loc);
+    QList<QPair<QString, file_location>> breadcrumbData;
+
+    for (const file_location& stepLoc : rawChain) {
+        QString folderName = m_generalControl->get_node_name(stepLoc.drive, stepLoc.index);
+        // 如果名字是空的，说明它是盘符根节点
+        if (folderName.isEmpty()) {
+            folderName = stepLoc.drive + ":\\";
+        }
+        breadcrumbData.append(qMakePair(folderName, stepLoc));
+    }
+
+    ui->breadcrumbline->setPath(breadcrumbData);
 }
 
-void MainWindow::onScanStarted(const QString& drive_letter){
-    // 第一步，清空原有数据
+void MainWindow::onScanStarted(const QString& drive_letter) {
     ui->fileDisplayerWidget->setFiles(QList<UI_Block>());
-    ui->breadcrumbline->setLabel("正在扫描" + drive_letter + "盘");
-    ui->breadcrumbline->initRoot();
-    // 第二步，锁死刷新和扫描按钮
+    ui->breadcrumbline->setLabel("正在扫描 " + drive_letter + " 盘...");
+    ui->breadcrumbline->setPath(QList<QPair<QString, file_location>>());
     ui->driveZone->setEnabled(false);
     ui->breadcrumbline->setEnabled(false);
-
-
 }
 
-void MainWindow::onScanFinished(const QString& drive_letter, uint32_t root_index){
-    qDebug() << "finished";
-    // 第一步，清空原有数据
-    ui->fileDisplayerWidget->setFiles(QList<UI_Block>());
-    ui->breadcrumbline->setLabel("当前路径");
-    ui->breadcrumbline->initRoot();
-    ui->breadcrumbline->pushNode(drive_letter + "盘", root_index);
-    // 第二步，恢复刷新和扫描按钮
+void MainWindow::onScanFinished(const QString& drive_letter, uint32_t root_index) {
+    qDebug() << "【扫描完成】盘符:" << drive_letter << " 根节点:" << root_index;
+
     ui->driveZone->setEnabled(true);
     ui->breadcrumbline->setEnabled(true);
-    // 第三步，循环添加信息
-    refreshTable(root_index);
+    ui->breadcrumbline->setLabel("当前路径");
 
+    navigateTo(file_location{drive_letter, root_index});
 }
 
 void MainWindow::onScanError(const QString& drive_letter, const QString& error_message){

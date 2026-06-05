@@ -1,6 +1,9 @@
 #ifndef HELPER_H
 #define HELPER_H
 
+#include "datatype.h"
+#include "general_control.h"
+
 #include <windows.h>
 #include <shellapi.h>
 

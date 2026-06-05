@@ -39,8 +39,9 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    // 文件表格
-    void refreshTable(uint32_t targetIndex);
+    // 当前文件信息
+    file_location m_currentFileLocation;
+    void navigateTo(const file_location& loc);
     // 获取文件
     general_control *m_generalControl = nullptr;
     void onScanStarted(const QString& drive_letter);

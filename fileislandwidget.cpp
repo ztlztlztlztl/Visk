@@ -163,6 +163,7 @@ void fileIslandWidget::onDoButtonClicked() {
 
     case 3:
         qDebug() << "请求批量删除" << targets.size() << "个文件";
+        qDebug() << targets[0].drive;
         emit requestDelete(targets);
         break;
 
@@ -257,15 +258,18 @@ void fileIslandWidget::dragEnterEvent(QDragEnterEvent *event) {
 void fileIslandWidget::dropEvent(QDropEvent *event) {
     QString dropText = event->mimeData()->text();
     QStringList lines = dropText.split('\n', Qt::SkipEmptyParts);
+    QList<file_location> droppedLocs;
+
     for (const QString &line : lines) {
-        // 协议格式是： "index|filename|absolutepath"
         QStringList parts = line.split('|');
-        if (parts.size() == 3) {
-            uint32_t index = parts[0].toUInt();
-            QString name = parts[1];
-            QString path = parts[2];
-            addFileToCurrentIsland(name, index, path);
+        if (parts.size() == 2) {
+            file_location loc = {parts[0], parts[1].toUInt()};
+            droppedLocs.append(loc);
         }
+    }
+
+    if (!droppedLocs.isEmpty()) {
+        emit filesDropped(droppedLocs);
     }
 
     event->acceptProposedAction();

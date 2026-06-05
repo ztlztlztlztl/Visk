@@ -27,6 +27,8 @@ public:
     void showIsland();
     void hideIsland();
     void switchDrive(const QString &driveLetter);
+    // 添加文件
+    void addFileToCurrentIsland(QString name, uint32_t index, QString absolutePath);
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -36,6 +38,7 @@ signals:
     void requestDelete(const QList<file_location>& targets);
     void requestRenameExt(const QList<file_location>& targets, const QString& newExt);
     void requestCopyMove(const QList<file_location>& targets, const QString& destPath, bool isMove);
+    void filesDropped(const QList<file_location>& locs);
 
 
 private slots:
@@ -86,7 +89,7 @@ private:
     // 数据
     QString m_currentDrive;
     QMap<QString, QList<file_node>> m_islandData;
-    void addFileToCurrentIsland(QString name, uint32_t index, QString absolutePath);
+
 
     void refreshUI();
 };
