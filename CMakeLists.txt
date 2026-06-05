@@ -34,6 +34,7 @@ qt_add_executable(Visk
     tablestylewidget.cpp
     filedisplaymodel.h
     filedisplaymodel.cpp
+    fileislandwidget.h fileislandwidget.cpp
 )
 
 target_link_libraries(Visk

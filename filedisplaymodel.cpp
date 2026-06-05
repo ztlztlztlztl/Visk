@@ -81,3 +81,36 @@ QVariant fileDisplayModel::headerData(int section, Qt::Orientation orientation, 
     }
     return QVariant();
 }
+
+Qt::ItemFlags fileDisplayModel::flags(const QModelIndex &index) const {
+    Qt::ItemFlags defaultFlags = QAbstractTableModel::flags(index);
+    if (index.isValid()) {
+        return Qt::ItemIsDragEnabled | defaultFlags;
+    }
+    return defaultFlags;
+}
+
+QStringList fileDisplayModel::mimeTypes() const {
+    return QStringList() << "text/plain";
+}
+
+QMimeData *fileDisplayModel::mimeData(const QModelIndexList &indexes) const {
+    QMimeData *mimeData = new QMimeData();
+    QStringList payloadList;
+    for (const QModelIndex &index : indexes) {
+        if (index.column() == 0) {
+            uint32_t fileIndex = data(index, fileIndexRole).toUInt();
+            QString fileName = data(index, fileNameRole).toString();
+            QString absolutePath = QDir(m_currentBasePath).filePath(fileName);
+            QString payload = QString("%1|%2|%3").arg(fileIndex).arg(fileName, absolutePath);
+            payloadList.append(payload);
+        }
+    }
+    mimeData->setText(payloadList.join('\n'));
+    return mimeData;
+}
+
+
+void fileDisplayModel::setCurrentBasePath(const QString &path) {
+    m_currentBasePath = path;
+}

@@ -12,6 +12,9 @@
 #include <QTableView>
 #include <QHeaderView>
 #include <QAbstractItemModel>
+#include <QDrag>
+#include <QMimeData>
+#include <QApplication>
 
 class tableStyleWidget: public QWidget {
     Q_OBJECT

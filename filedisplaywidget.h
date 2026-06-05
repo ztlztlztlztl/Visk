@@ -46,6 +46,8 @@ public:
 
     void setFiles(const QList<UI_Block>& files);
 
+    void setCurrentPath(const QString &path);
+
 signals:
     void onFileDoubleClicked(QString name, uint32_t index, bool isDir);
 

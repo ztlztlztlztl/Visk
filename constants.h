@@ -34,6 +34,33 @@ const QString style_breadcrumbWidget_text =
     "color: #888888; font-weight: bold;";
 const QString style_breadcrumbWidget_background =
     ".breadcrumbWidget{ background-color: #ffffff;}";
+const QString style_fileislandWidget_background =
+    "background-color: #2b2b2b; color: white; border-top: 1px solid #3d3d3d;";
+const QString style_fileislandWidget_object_background =
+    "background-color: #1e1e1e; border: 1px solid #555; border-radius: 4px;";
+const QString style_fileislandWidget_action_button =
+    "QPushButton:checked { background-color: #0078D7; border: none; } "
+    "QPushButton { background-color: #333; border: 1px solid #555; padding: 6px; border-radius: 4px; }";
+const QString style_fileislandWidget_destination_do_button =
+    "QPushButton { font-size: 18px; font-weight: bold; background-color: #107C10; border: none; border-radius: 4px; } "
+    "QPushButton:disabled { background-color: #555; color: #888; }";
+const QString style_fileislandWidget_destination_delete_warning =
+    "color: #ff4d4f; font-weight: bold;";
+const QString style_fileislandWidget_object_delete_button =
+    "QPushButton { background: transparent; border: none; color: #888; font-size: 16px; font-weight: bold; }"
+    "QPushButton:hover { color: #ff4d4f; }"
+    "QPushButton:pressed { color: #aa0000; }";
+
+
+
+
+
+
+
+
+
+
+
 
 
 

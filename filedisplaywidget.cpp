@@ -59,3 +59,9 @@ void fileDisplayer::onTableIndexDoubleClicked(const QModelIndex &index) {
 
     emit onFileDoubleClicked(clickedBlock.file_name, clickedBlock.file_index, clickedBlock.is_directory);
 }
+
+void fileDisplayer::setCurrentPath(const QString &path) {
+    if (m_fileModel) {
+        m_fileModel->setCurrentBasePath(path);
+    }
+}

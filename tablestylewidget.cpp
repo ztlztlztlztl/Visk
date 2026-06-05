@@ -40,6 +40,10 @@ void tableStyleWidget::setupTableAppearance() {
     header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
     header->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
+    m_tableView->setDragEnabled(true);
+    m_tableView->setDragDropMode(QAbstractItemView::DragOnly);
+    m_tableView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+
     m_tableView->setSortingEnabled(true);
 }
 

@@ -11,6 +11,46 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+
+    // 文件岛
+
+    m_dockIsland = new QDockWidget("文件岛", this);
+    m_dockIsland->setAllowedAreas(Qt::BottomDockWidgetArea);
+    m_dockIsland->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable );
+
+    m_fileIsland = new fileIslandWidget(m_dockIsland);
+    m_dockIsland->setWidget(m_fileIsland);
+    m_dockIsland->setFixedHeight(180);
+    addDockWidget(Qt::BottomDockWidgetArea, m_dockIsland);
+    m_dockIsland->hide();
+    connect(ui->fileislandBtn, &QPushButton::clicked, this, [this]() {
+        if (m_dockIsland->isVisible()) {
+            m_dockIsland->hide();
+        } else {
+            m_dockIsland->setFloating(false);
+            m_dockIsland->show();
+            m_dockIsland->raise();
+        }
+    });
+    connect(m_dockIsland, &QDockWidget::topLevelChanged, this, [this](bool floating) {
+        if (floating) {
+            ui->fileislandBtn->setText("▼ 收起文件岛");
+            m_dockIsland->setMaximumHeight(10000);
+            m_dockIsland->setMinimumHeight(100);
+        } else {
+            m_dockIsland->setFixedHeight(180);
+            ui->fileislandBtn->setText("▼ 收起文件岛");
+        }
+    });
+    connect(m_dockIsland, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (!visible || m_dockIsland->isFloating()) {
+            ui->fileislandBtn->setText("▲ 呼出文件岛");
+        } else {
+            ui->fileislandBtn->setText("▼ 收起文件岛");
+        }
+    });
+
     // 设置 drivelist
     connect(ui->driveZone, &driveListZone::globalRefreshRequested, this, [this]() {
         qDebug() << "【主窗口】收到全局盘符刷新请求！正在获取系统硬盘...";
@@ -20,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->driveZone, &driveListZone::scanDriveRequested,
             this, [this](const QString &driveLetter, bool forceRefresh) {
                 qDebug() << "【主窗口】收到扫描请求！盘符:" << driveLetter << " 是否强刷:" << forceRefresh;
+                m_fileIsland->switchDrive(ui->breadcrumbline->getRootLetter());
                 onScanStarted(driveLetter);
                 m_generalControl->start_scan(driveLetter, forceRefresh);
             });
@@ -27,6 +68,9 @@ MainWindow::MainWindow(QWidget *parent)
     // 设置 breadcrumb
     ui->breadcrumbline->setLabel("等待");
     // 设置 tableview 的表头
+
+
+
 
     // 链接函数
     connect(ui->fileDisplayerWidget, &fileDisplayer::onFileDoubleClicked,
@@ -41,6 +85,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onScanFinished);
     connect(m_generalControl, &general_control::scan_error,
             this, &MainWindow::onScanError);
+
 }
 
 MainWindow::~MainWindow()
@@ -82,6 +127,7 @@ void MainWindow::refreshTable(uint32_t targetIndex){
 
     // 🌟 仅仅只需要这一行代码，所有的排序、更新、UI渲染全部自动搞定！
     ui->fileDisplayerWidget->setFiles(fileDatas);
+    ui->fileDisplayerWidget->setCurrentPath(ui->breadcrumbline->getAbsolutePath());
 }
 
 void MainWindow::onScanStarted(const QString& drive_letter){
