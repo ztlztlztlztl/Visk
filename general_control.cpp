@@ -292,11 +292,16 @@ QString general_control::get_absolute_path(const QString& drive_letter, uint32_t
     if (!drive_map.contains(drive_letter) || node_index == INVALID_INDEX) return "";
 
     const drive_content& ctx = drive_map[drive_letter];
+    if (node_index >= ctx.memory_tree.size()) return "";
 
     QStringList path_part;
     uint32_t current_idx = node_index;
 
     while(current_idx != INVALID_INDEX) {
+        if (current_idx >= ctx.memory_tree.size()) {
+            qDebug() << "路径爬升中发生越界，强行阻断";
+            break;
+        }
         if (current_idx != ctx.root_idx) {
             path_part.prepend(get_node_name(drive_letter, current_idx));
         }
@@ -365,6 +370,13 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
         }
         //获取绝对路径
         drive_content& ctx =drive_map[location.drive];
+
+        if (location.index == INVALID_INDEX || location.index >= ctx.memory_tree.size()) {
+            qDebug() << "拦截到越界驱动器:" << location.drive << " 传入Index:" << location.index << " 实际树大小:" << ctx.memory_tree.size();
+            all_success = false;
+            continue;
+        }
+
         QString absolute_path = get_absolute_path(location.drive, location.index);
         if (file_worker.delete_file(absolute_path)) {
             update_memory_after_delete(ctx, location.index);
