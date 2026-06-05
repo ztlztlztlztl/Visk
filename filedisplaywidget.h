@@ -15,10 +15,28 @@
 
 
 class fileSortProxyModel : public QSortFilterProxyModel {
+    Q_OBJECT
 public:
     explicit fileSortProxyModel(QObject *parent = nullptr)
-        : QSortFilterProxyModel(parent) {}
+        : QSortFilterProxyModel(parent), m_folderOnlyMode(false) {}
+
+    void setFolderOnlyMode(bool folderOnly) {
+        if (m_folderOnlyMode != folderOnly) {
+            m_folderOnlyMode = folderOnly;
+            invalidateFilter();
+        }
+    }
+
 protected:
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override {
+        if (m_folderOnlyMode) {
+            QModelIndex idx = sourceModel()->index(source_row, 0, source_parent);
+            bool isDir = sourceModel()->data(idx, fileDisplayModel::fileIsDirRole).toBool();
+            if (!isDir) return false;
+        }
+        return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+    }
+
     bool lessThan(const QModelIndex &left, const QModelIndex &right) const override {
         int col = left.column();
         if (col == 1) {
@@ -33,6 +51,9 @@ protected:
         }
         return QSortFilterProxyModel::lessThan(left, right);
     }
+
+private:
+    bool m_folderOnlyMode; // 记忆当前模式
 };
 
 
@@ -48,6 +69,8 @@ public:
 
     void setCurrentPath(const QString &path);
 
+    void setFolderOnlyMode(bool folderOnly);
+
 signals:
     void onFileDoubleClicked(QString name, uint32_t index, bool isDir);
 
@@ -56,8 +79,7 @@ private slots:
 
 private:
 
-
-    QSortFilterProxyModel* m_proxyModel;
+    fileSortProxyModel* m_proxyModel;
     fileDisplayModel* m_fileModel;
     QTabWidget* m_tabWidget;
     tableStyleWidget* m_table;

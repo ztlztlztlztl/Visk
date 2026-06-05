@@ -50,10 +50,10 @@ const QString style_fileislandWidget_object_delete_button =
     "QPushButton { background: transparent; border: none; color: #888; font-size: 16px; font-weight: bold; }"
     "QPushButton:hover { color: #ff4d4f; }"
     "QPushButton:pressed { color: #aa0000; }";
-
-
-
-
+const QString style_fileislandWidget_destination_systemcopy_text =
+    "color: #00d2ff; font-weight: bold;";
+const QString style_fileselectdialog_check_button =
+    "background-color: #00d2ff; color: black; font-weight: bold; padding: 5px 15px; border-radius: 3px;";
 
 
 

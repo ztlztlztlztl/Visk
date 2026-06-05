@@ -65,3 +65,9 @@ void fileDisplayer::setCurrentPath(const QString &path) {
         m_fileModel->setCurrentBasePath(path);
     }
 }
+
+void fileDisplayer::setFolderOnlyMode(bool folderOnly) {
+    if (m_proxyModel) {
+        m_proxyModel->setFolderOnlyMode(folderOnly);
+    }
+}

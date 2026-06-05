@@ -37,8 +37,10 @@ protected:
 signals:
     void requestDelete(const QList<file_location>& targets);
     void requestRenameExt(const QList<file_location>& targets, const QString& newExt);
-    void requestCopyMove(const QList<file_location>& targets, const QString& destPath, bool isMove);
+    void requestCopyMoveDialog(const QList<file_location>& targets, bool isMove);
+    void requestSystemCopy(const QList<file_location>& targets);
     void filesDropped(const QList<file_location>& locs);
+
 
 
 private slots:
@@ -65,6 +67,7 @@ private:
     QPushButton *m_btnMove;
     QPushButton *m_btnDelete;
     QPushButton *m_btnRename;
+    QPushButton *m_btnSystemCopy;
 
     // Destination
     QStackedWidget *m_destinationStack;
@@ -74,7 +77,6 @@ private:
 
     // Page 1：复制/移动
     QWidget *m_pagePath;
-    QLineEdit *m_pathInput;
 
     // Page 2：删除
     QWidget *m_pageDelete;
@@ -83,6 +85,9 @@ private:
     // Page 3：改后缀
     QWidget *m_pageRename;
     QLineEdit *m_extInput;
+
+    // Page 4：复制到剪贴板
+    QWidget *m_pageSystemCopy;
 
     // 执行按钮
     QPushButton *m_btnDo;

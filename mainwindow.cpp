@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_fileIsland = new fileIslandWidget(m_dockIsland);
     m_dockIsland->setWidget(m_fileIsland);
-    m_dockIsland->setFixedHeight(180);
+    m_dockIsland->setFixedHeight(220);
     addDockWidget(Qt::BottomDockWidgetArea, m_dockIsland);
     m_dockIsland->hide();
     connect(ui->fileislandBtn, &QPushButton::clicked, this, [this]() {
@@ -95,9 +95,87 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_fileIsland, &fileIslandWidget::requestDelete, this, [=](const QList<file_location>& targets) {
         // 直接调后端
         bool success = m_generalControl->deleteFile(targets);
-        if (success) {
+        if (!success) {
+            return;
+        }
+        QList<file_location> chain = m_generalControl->get_path_chain(m_currentFileLocation);
+        bool isCurrentFolderAlive = false;
+        if (!chain.isEmpty()) {
+            file_location rootLoc = chain.first();
+            QString rootPath = m_generalControl->get_absolute_path(rootLoc.drive, rootLoc.index);
+            if (rootPath == rootLoc.drive + ":\\") {
+                isCurrentFolderAlive = true;
+            }
+        }
+        if (isCurrentFolderAlive) {
             navigateTo(m_currentFileLocation);
-            qDebug() << "删除成功，内存树已同步！";
+        }
+        else {
+            QString currentDrive = m_currentFileLocation.drive.toUpper();
+            uint32_t rootIdx = m_driveRoots.value(currentDrive, INVALID_INDEX);
+
+            if (rootIdx != INVALID_INDEX) {
+                qDebug() << "⚠️【避险警报】当前浏览目录已被无情删除！正在紧急撤离至" << currentDrive << "盘根目录...";
+                navigateTo(file_location{currentDrive, rootIdx});
+            }
+        }
+    });
+
+    connect(m_fileIsland, &fileIslandWidget::requestCopyMoveDialog, this, [=](const QList<file_location>& targets, bool isMove) {
+
+        qDebug() << "【大总管】收到弹窗请求！准备生成弹窗..."; // 🌟 加一句打印测试
+        folderSelectDialog dlg(m_generalControl, m_currentFileLocation, this);
+
+        if (dlg.exec() == QDialog::Accepted) {
+            file_location destLoc = dlg.getSelectedLocation();
+            auto op = isMove ? filemanager::clipboard_operation::Cut : filemanager::clipboard_operation::Copy;
+            m_generalControl->setClipboard(targets, op);
+            bool success = m_generalControl->execute_paste(destLoc);
+            if (success) {
+                qDebug() << "【成功】" << (isMove ? "移动" : "复制") << "完成！";
+                navigateTo(m_currentFileLocation);
+            }
+        } else {
+            qDebug() << "用户取消了操作。";
+        }
+    });
+
+    connect(m_fileIsland, &fileIslandWidget::requestRenameExt, this, [=](const QList<file_location>& targets, const QString& newExt) {
+
+        bool allSuccess = true;
+        for (const file_location& target : targets) {
+            if (!m_generalControl->change_file_extension(target, newExt)) {
+                allSuccess = false;
+            }
+        }
+
+        if (allSuccess) {
+            qDebug() << "【成功】批量改后缀全部完成！";
+        } else {
+            qDebug() << "【警告】部分文件改后缀失败（可能是被占用或原名无后缀）。";
+        }
+
+        navigateTo(m_currentFileLocation);
+    });
+
+    connect(m_fileIsland, &fileIslandWidget::requestSystemCopy, this, [=](const QList<file_location>& targets) {
+
+        QList<QUrl> urls;
+
+        for (const file_location& loc : targets) {
+            QString absPath = m_generalControl->get_absolute_path(loc.drive, loc.index);
+            if (!absPath.isEmpty()) {
+                urls.append(QUrl::fromLocalFile(absPath));
+            }
+        }
+
+        if (!urls.isEmpty()) {
+            QMimeData *mimeData = new QMimeData();
+            mimeData->setUrls(urls);
+
+            QApplication::clipboard()->setMimeData(mimeData);
+
+            qDebug() << "【系统联动】" << urls.count() << " 个文件已注入系统剪贴板！现在可以直接去微信/资源管理器 Ctrl+V 了！";
         }
     });
 
@@ -164,7 +242,7 @@ void MainWindow::onScanStarted(const QString& drive_letter) {
 
 void MainWindow::onScanFinished(const QString& drive_letter, uint32_t root_index) {
     qDebug() << "【扫描完成】盘符:" << drive_letter << " 根节点:" << root_index;
-
+    m_driveRoots[drive_letter.toUpper()] = root_index;
     ui->driveZone->setEnabled(true);
     ui->breadcrumbline->setEnabled(true);
     ui->breadcrumbline->setLabel("当前路径");

@@ -7,6 +7,7 @@
 #include "breadcrumbwidget.h"
 #include "filedisplaywidget.h"
 #include "fileislandwidget.h"
+#include "folderselectdialog.h"
 
 #include <QMainWindow>
 #include <QLabel>
@@ -18,6 +19,9 @@
 #include <QUrl>
 #include <QDockWidget>
 #include <QMenu>
+#include <QClipboard>
+#include <QMimeData>
+#include <QApplication>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -40,6 +44,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     // 当前文件信息
+    QHash<QString, uint32_t> m_driveRoots;
     file_location m_currentFileLocation;
     void navigateTo(const file_location& loc);
     // 获取文件
