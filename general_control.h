@@ -51,9 +51,7 @@ public:
     QList<UI_Block> search_file(const QString& drive_letter, uint32_t target_index, const QString& key_words);
 
     // Squarified Treemap：输入盘符+目录节点+矩形尺寸 → 输出每个子项的 x/y/w/h
-    std::vector<TreemapItem> get_treemap(const QString& drive_letter,
-                                          uint32_t target_index,
-                                          double rect_w, double rect_h) const;
+    std::vector<TreemapItem> get_treemap(const QString& drive_letter, uint32_t target_index, double rect_w, double rect_h) const;
 
     //idx->绝对路径
     QString get_absolute_path(const QString& drive_letter, uint32_t node_index);
@@ -69,6 +67,7 @@ public:
     bool deleteFile(const QList<file_location>& targets);
     bool setClipboard(const QList<file_location>& targets, filemanager::clipboard_operation operation);
     bool execute_paste(const file_location& destination_folder);
+    bool change_file_extension(const file_location& target_file, const QString& new_extention);
 
 signals:
     //扫盘相关信号
