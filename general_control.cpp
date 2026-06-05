@@ -396,9 +396,18 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
 }
 
 bool general_control::renameFile(const file_location& target, const QString& new_name) {
-    if (!drive_map.contains(target.drive)) return false;
+    if (!drive_map.contains(target.drive)) {
+        qDebug() << "未找到盘符" << target.drive;
+        return false;
+    }
 
     drive_content& ctx = drive_map[target.drive];
+
+    if (target.index == INVALID_INDEX || target.index >= ctx.memory_tree.size()) {
+        qDebug() << "越界的Index:" << target.index;
+        return false;
+    }
+
     QString old_path = get_absolute_path(target.drive, target.index);
 
     if (file_worker.rename_file(old_path, new_name)) {
@@ -410,10 +419,11 @@ bool general_control::renameFile(const file_location& target, const QString& new
 
         ctx.string_pool.insert(ctx.string_pool.end(), new_name_w.begin(), new_name_w.end());
 
+        emit rename_finished();
         return true;
     }
 
-    emit rename_finished();
+    qDebug() << "重命名失败" << old_path;
     return false;
 }
 
@@ -570,14 +580,35 @@ bool general_control::execute_paste(const file_location& dest_folder) {
     }
 
     QString target_drive = dest_folder.drive;
-    if (!drive_map.contains(target_drive)) return false;
+
+    if (!drive_map.contains(target_drive)) {
+        qDebug() << "未找到盘符" << target_drive;
+        return false;
+    }
+
     drive_content& ctx = drive_map[target_drive];
+
+    if (dest_folder.index == INVALID_INDEX || dest_folder.index >= ctx.memory_tree.size()) {
+        qDebug() << "Index越界:" << dest_folder.index;
+        return false;
+    }
+
+    if (!ctx.memory_tree[dest_folder.index].is_dir) {
+        qDebug() << "目标不是文件夹，无法执行粘贴！";
+        return false;
+    }
 
     bool all_success = true;
 
     for (const file_location& src_loc : std::as_const(m_clipboard_targets)) {
-        //跨盘符暂不处理
         if (src_loc.drive != target_drive) {
+            qDebug() << "不能跨盘符：" <<target_drive;
+            all_success = false;
+            continue;
+        }
+
+        if (src_loc.index == INVALID_INDEX || src_loc.index >= ctx.memory_tree.size()) {
+            qDebug() << "源Index越界/已失效 ->" << src_loc.index;
             all_success = false;
             continue;
         }
@@ -590,6 +621,7 @@ bool general_control::execute_paste(const file_location& dest_folder) {
         QString norm_src = QDir::cleanPath(src_path) + "/";
         QString norm_dest = QDir::cleanPath(dest_dir_path) + "/";
         if (norm_dest.startsWith(norm_src, Qt::CaseInsensitive)) {
+            qDebug() << "文件夹不能复制到自身内";
             all_success = false;
             continue;
         }
@@ -622,6 +654,7 @@ bool general_control::execute_paste(const file_location& dest_folder) {
                 uint32_t cloned_idx = update_memory_after_copy(ctx, src_loc.index, dest_folder.index, new_safe_name);
                 attach_node(ctx, cloned_idx, dest_folder.index);
             } else {
+                qDebug() << "复制失败";
                 all_success = false;
             }
         }
