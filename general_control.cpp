@@ -615,6 +615,43 @@ bool general_control::execute_paste(const file_location& dest_folder) {
     return all_success;
 }
 
+// ── Squarified Treemap 封装 ───────────────────────────────────────────
+std::vector<TreemapItem> general_control::get_treemap(
+    const QString& drive_letter,
+    uint32_t target_index,
+    double rect_w, double rect_h) const
+{
+    std::vector<TreemapItem> empty;
+    if (!drive_map.contains(drive_letter)) return empty;
+
+    const drive_content& ctx = drive_map[drive_letter];
+    if (target_index == INVALID_INDEX || target_index >= ctx.memory_tree.size())
+        return empty;
+
+    const Optimized_Node& parent = ctx.memory_tree[target_index];
+
+    // 收集直接子节点
+    std::vector<qint64>   sizes;
+    std::vector<uint32_t> indices;
+    std::vector<QString>  names;
+    std::vector<bool>     is_dirs;
+
+    uint32_t child = parent.first_child;
+    while (child != INVALID_INDEX) {
+        const Optimized_Node& node = ctx.memory_tree[child];
+        if (node.size > 0) {  // 只纳入有实际大小的项
+            sizes.push_back(static_cast<qint64>(node.size));
+            indices.push_back(child);
+            names.push_back(QString::fromWCharArray(
+                &ctx.string_pool[node.name_offset], node.name_len));
+            is_dirs.push_back(node.is_dir != 0);
+        }
+        child = node.next_sibling;
+    }
+
+    // 委托给 TreemapEngine（纯计算）
+    return TreemapEngine::compute(sizes, indices, names, is_dirs,
+                                   0.0, 0.0, rect_w, rect_h);
 UI_Block general_control::get_target_content(const QString& drive_letter, uint32_t target_index) {
     UI_Block block;
     if (!drive_map.contains(drive_letter)) return block;

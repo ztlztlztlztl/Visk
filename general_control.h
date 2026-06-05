@@ -11,6 +11,7 @@
 #include "scanner.h"
 #include "filemanager.h"
 #include "UsbDeviceMonitor.h"
+#include "treemapengine.h"
 
 //并发任务结构体
 struct file_size_task {
@@ -48,6 +49,11 @@ public:
 
     //关键词搜索
     QList<UI_Block> search_file(const QString& drive_letter, uint32_t target_index, const QString& key_words);
+
+    // Squarified Treemap：输入盘符+目录节点+矩形尺寸 → 输出每个子项的 x/y/w/h
+    std::vector<TreemapItem> get_treemap(const QString& drive_letter,
+                                          uint32_t target_index,
+                                          double rect_w, double rect_h) const;
 
     //idx->绝对路径
     QString get_absolute_path(const QString& drive_letter, uint32_t node_index);
