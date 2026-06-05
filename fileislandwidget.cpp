@@ -138,8 +138,43 @@ void fileIslandWidget::checkReadyState() {
     }
     m_btnDo->setEnabled(hasFiles && (actionId != -1) && isParamReady);
 }
+
 void fileIslandWidget::onDoButtonClicked() {
-    qDebug() << "【DO 按钮被按下】准备组装任务发给后端...";
+    int actionId = m_actionGroup->checkedId();
+    if (actionId == 0) return;
+
+    QList<file_node> currentFiles = m_islandData[m_currentDrive];
+    if (currentFiles.isEmpty()) return;
+
+    QList<file_location> targets;
+    for (const file_node& node : currentFiles) {
+        targets.append(node.fl);
+    }
+    switch (actionId) {
+    case 1:
+        qDebug() << "请求复制到:" << m_pathInput->text();
+        emit requestCopyMove(targets, m_pathInput->text(), false);
+        break;
+
+    case 2:
+        qDebug() << "请求移动到:" << m_pathInput->text();
+        emit requestCopyMove(targets, m_pathInput->text(), true);
+        break;
+
+    case 3:
+        qDebug() << "请求批量删除" << targets.size() << "个文件";
+        emit requestDelete(targets);
+        break;
+
+    case 4:
+        QString newExt = m_extInput->text();
+        if (!newExt.startsWith(".")) newExt.prepend(".");
+        qDebug() << "请求批量改后缀为:" << newExt;
+        emit requestRenameExt(targets, newExt);
+        break;
+    }
+    m_islandData[m_currentDrive].clear();
+    refreshUI();
 }
 
 void fileIslandWidget::onRemoveItemButtonClicked() {

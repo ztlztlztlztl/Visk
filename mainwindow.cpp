@@ -71,20 +71,23 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 
+    // 总控类
+    m_generalControl = new general_control(this);
 
     // 链接函数
     connect(ui->fileDisplayerWidget, &fileDisplayer::onFileDoubleClicked,
             this, &MainWindow::handleFileDoubleClicked);
     connect(ui->breadcrumbline, &breadcrumbWidget::pathClicked,
             this, &MainWindow::refreshTable);
-    // 信号接收们
-    m_generalControl = new general_control(this);
     connect(m_generalControl, &general_control::scan_started,
             this, &MainWindow::onScanStarted);
     connect(m_generalControl, &general_control::scan_finished,
             this, &MainWindow::onScanFinished);
     connect(m_generalControl, &general_control::scan_error,
             this, &MainWindow::onScanError);
+
+
+
 
 }
 

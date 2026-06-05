@@ -32,6 +32,12 @@ protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
 
+signals:
+    void requestDelete(const QList<file_location>& targets);
+    void requestRenameExt(const QList<file_location>& targets, const QString& newExt);
+    void requestCopyMove(const QList<file_location>& targets, const QString& destPath, bool isMove);
+
+
 private slots:
     void onActionToggled(int id);
     void onDoButtonClicked();
