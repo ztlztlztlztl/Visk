@@ -62,6 +62,9 @@ public:
     //直接获取idx的内容
     UI_Block get_target_content(const QString& drive_letter, uint32_t target_index);
 
+    //获取文件路径链
+    QList<file_location> get_path_chain(const file_location& target);
+
     //文件操作函数
     bool renameFile(const file_location& target, const QString& new_name);
     bool deleteFile(const QList<file_location>& targets);
