@@ -38,6 +38,7 @@ qt_add_executable(Visk
     filedisplaymodel.cpp
     fileislandwidget.h fileislandwidget.cpp
     folderselectdialog.h folderselectdialog.cpp
+    treemapstylewidget.h treemapstylewidget.cpp
 
 )
 

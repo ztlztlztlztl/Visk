@@ -4,6 +4,7 @@
 #include "datatype.h"
 #include "filedisplaymodel.h"
 #include "tablestylewidget.h"
+#include "treemapstylewidget.h"
 
 
 #include <QWidget>
@@ -71,8 +72,13 @@ public:
 
     void setFolderOnlyMode(bool folderOnly);
 
+    void setTreemapData(const std::vector<TreemapItem>& data, const QString& currentDrive);
+
 signals:
     void onFileDoubleClicked(QString name, uint32_t index, bool isDir);
+
+    void onTreemapDoubleClicked(uint32_t index, bool isDir);
+    void requestTreemapUpdate(double w, double h);
 
 private slots:
     void onTableIndexDoubleClicked(const QModelIndex &index);
@@ -83,6 +89,8 @@ private:
     fileDisplayModel* m_fileModel;
     QTabWidget* m_tabWidget;
     tableStyleWidget* m_table;
+
+    treemapStyleWidget* m_treemapWidget;
 };
 
 

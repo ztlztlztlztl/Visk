@@ -178,6 +178,20 @@ MainWindow::MainWindow(QWidget *parent)
             qDebug() << "【系统联动】" << urls.count() << " 个文件已注入系统剪贴板！现在可以直接去微信/资源管理器 Ctrl+V 了！";
         }
     });
+    connect(ui->fileDisplayerWidget, &fileDisplayer::onTreemapDoubleClicked, this, [=](uint32_t index, bool isDir) {
+        handleFileDoubleClicked("", index, isDir);
+    });
+    connect(ui->fileDisplayerWidget, &fileDisplayer::requestTreemapUpdate, this, [=](double w, double h) {
+        if (m_currentFileLocation.index == INVALID_INDEX || w <= 0 || h <= 0) return;
+
+        std::vector<TreemapItem> mapData = m_generalControl->get_treemap(
+            m_currentFileLocation.drive,
+            m_currentFileLocation.index,
+            w, h
+            );
+
+        ui->fileDisplayerWidget->setTreemapData(mapData, m_currentFileLocation.drive);
+    });
 
 
 
@@ -230,6 +244,14 @@ void MainWindow::navigateTo(const file_location& loc) {
     }
 
     ui->breadcrumbline->setPath(breadcrumbData);
+
+    double currentW = ui->fileDisplayerWidget->width();
+    double currentH = ui->fileDisplayerWidget->height();
+
+    if (currentW > 0 && currentH > 0) {
+        std::vector<TreemapItem> mapData = m_generalControl->get_treemap(loc.drive, loc.index, currentW, currentH);
+        ui->fileDisplayerWidget->setTreemapData(mapData, loc.drive);
+    }
 }
 
 void MainWindow::onScanStarted(const QString& drive_letter) {
