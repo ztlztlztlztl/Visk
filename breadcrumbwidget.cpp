@@ -73,3 +73,37 @@ void breadcrumbWidget::setLabel(const QString& str){
     rebuildUI();
 }
 
+QString breadcrumbWidget::getAbsolutePath() const {
+    if (m_pathStack.isEmpty()) {
+        return QString();
+    }
+    if (m_pathStack.size() == 1) {
+        QString root = m_pathStack[0].first[0];
+        root += ":/";
+        return root;
+    }
+    QStringList fullPathList;
+    QString root = m_pathStack[0].first[0];
+    root += ":";
+    fullPathList.append(root);
+    for (int i = 1; i < m_pathStack.size(); ++i) {
+        fullPathList.append(m_pathStack.at(i).first);
+    }
+    return fullPathList.join("/");
+}
+
+QString breadcrumbWidget::getRootLetter() const {
+    if (m_pathStack.isEmpty()) {
+        return QString();
+    }
+    QString root = m_pathStack[0].first[0];
+    return root;
+
+}
+
+
+
+
+
+
+

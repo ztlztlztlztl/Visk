@@ -11,6 +11,46 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+
+    // 文件岛
+
+    m_dockIsland = new QDockWidget("文件岛", this);
+    m_dockIsland->setAllowedAreas(Qt::BottomDockWidgetArea);
+    m_dockIsland->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable );
+
+    m_fileIsland = new fileIslandWidget(m_dockIsland);
+    m_dockIsland->setWidget(m_fileIsland);
+    m_dockIsland->setFixedHeight(180);
+    addDockWidget(Qt::BottomDockWidgetArea, m_dockIsland);
+    m_dockIsland->hide();
+    connect(ui->fileislandBtn, &QPushButton::clicked, this, [this]() {
+        if (m_dockIsland->isVisible()) {
+            m_dockIsland->hide();
+        } else {
+            m_dockIsland->setFloating(false);
+            m_dockIsland->show();
+            m_dockIsland->raise();
+        }
+    });
+    connect(m_dockIsland, &QDockWidget::topLevelChanged, this, [this](bool floating) {
+        if (floating) {
+            ui->fileislandBtn->setText("▼ 收起文件岛");
+            m_dockIsland->setMaximumHeight(10000);
+            m_dockIsland->setMinimumHeight(100);
+        } else {
+            m_dockIsland->setFixedHeight(180);
+            ui->fileislandBtn->setText("▼ 收起文件岛");
+        }
+    });
+    connect(m_dockIsland, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (!visible || m_dockIsland->isFloating()) {
+            ui->fileislandBtn->setText("▲ 呼出文件岛");
+        } else {
+            ui->fileislandBtn->setText("▼ 收起文件岛");
+        }
+    });
+
     // 设置 drivelist
     connect(ui->driveZone, &driveListZone::globalRefreshRequested, this, [this]() {
         qDebug() << "【主窗口】收到全局盘符刷新请求！正在获取系统硬盘...";
@@ -20,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->driveZone, &driveListZone::scanDriveRequested,
             this, [this](const QString &driveLetter, bool forceRefresh) {
                 qDebug() << "【主窗口】收到扫描请求！盘符:" << driveLetter << " 是否强刷:" << forceRefresh;
+                m_fileIsland->switchDrive(ui->breadcrumbline->getRootLetter());
                 onScanStarted(driveLetter);
                 m_generalControl->start_scan(driveLetter, forceRefresh);
             });
@@ -27,35 +68,27 @@ MainWindow::MainWindow(QWidget *parent)
     // 设置 breadcrumb
     ui->breadcrumbline->setLabel("等待");
     // 设置 tableview 的表头
-    // 创建
-    m_fileDataModel = new QStandardItemModel(this);
-    m_fileDataModel->setHorizontalHeaderLabels(QList<QString>{" 名称", " 大小", " 类型", " 修改时间"});
-    m_proxyModel = new QSortFilterProxyModel(this);
-    m_proxyModel->setSourceModel(m_fileDataModel);
-    ui->filesTableView->setModel(m_proxyModel);
-    ui->filesTableView->setSortingEnabled(true);
-    m_proxyModel->setSortRole(Qt::UserRole + 0);
-    ui->filesTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    // 格式
-    QHeaderView *header = ui->filesTableView->horizontalHeader();
-    header->setSectionResizeMode(0, QHeaderView::Stretch);           // 名称列：自动拉伸占满大头
-    header->setSectionResizeMode(1, QHeaderView::ResizeToContents);  // 大小列：根据文字内容多少自动刚好够大
-    header->setSectionResizeMode(2, QHeaderView::ResizeToContents);  // 类型列：根据文字内容自动刚好够大
-    header->setSectionResizeMode(3, QHeaderView::Stretch);           // 修改时间列：也自动拉伸
-    ui->filesTableView->verticalHeader()->hide(); // 隐藏序号列
+
+
+
+    // 总控类
+    m_generalControl = new general_control(this);
+
     // 链接函数
-    connect(ui->filesTableView, &QTableView::doubleClicked,
-            this, &MainWindow::onTableDoubleClicked);
+    connect(ui->fileDisplayerWidget, &fileDisplayer::onFileDoubleClicked,
+            this, &MainWindow::handleFileDoubleClicked);
     connect(ui->breadcrumbline, &breadcrumbWidget::pathClicked,
             this, &MainWindow::refreshTable);
-    // 信号接收们
-    m_generalControl = new general_control(this);
     connect(m_generalControl, &general_control::scan_started,
             this, &MainWindow::onScanStarted);
     connect(m_generalControl, &general_control::scan_finished,
             this, &MainWindow::onScanFinished);
     connect(m_generalControl, &general_control::scan_error,
             this, &MainWindow::onScanError);
+
+
+
+
 }
 
 MainWindow::~MainWindow()
@@ -64,61 +97,45 @@ MainWindow::~MainWindow()
 }
 
 
-void MainWindow::onTableDoubleClicked(const QModelIndex &index)
+void MainWindow::handleFileDoubleClicked(QString name, uint32_t index, bool isDir)
 {
-    qDebug() << "捕捉到双击信号";
-    if (!index.isValid()) return;
+    qDebug() << "【主窗口】捕捉到双击信号！文件名:" << name << " 目录?:" << isDir;
 
-    QModelIndex typeColumnIndex = index.siblingAtColumn(2);
-    bool isDir = typeColumnIndex.data(Qt::UserRole + 1).toBool();
     if (!isDir) {
-        qDebug() << "双击了普通文件，不执行下沉操作。";
+        // 如果是文件，直接打开
+        QString currentDir = ui->breadcrumbline->getAbsolutePath();
+        QString filePath = QDir(currentDir).filePath(name);
+        qDebug() << "准备调用系统打开路径：" << filePath;
+        bool success = QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
+        if (!success) {
+            qDebug() << "打开失败！";
+        }
         return;
     }
-    QModelIndex nameColumnIndex = index.siblingAtColumn(0);
-    uint32_t targetIdx = nameColumnIndex.data(Qt::UserRole + 1).toUInt();
-    QString name = nameColumnIndex.data(Qt::DisplayRole).toString();
 
-
-    qDebug() << "【双击下沉】准备进入文件夹:" << name << " 节点序号:" << targetIdx;
-
-    ui->breadcrumbline->pushNode(name, targetIdx);
-    refreshTable(targetIdx);
+    // 如果是文件夹，更新面包屑，并刷新表格
+    qDebug() << "【双击下沉】准备进入文件夹:" << name << " 节点序号:" << index;
+    ui->breadcrumbline->pushNode(name, index);
+    refreshTable(index);
 }
 
-void MainWindow::appendfileData(const UI_Block &block){
-    QList<QStandardItem*> rowItems;
-    rowItems << new QStandardItem(block.file_name);
-    rowItems << new QStandardItem(Helper::transToMemory(block.size));
-    rowItems << new QStandardItem(Helper::getFileTypeString(block.file_name, block.is_directory));
-    rowItems << new QStandardItem(block.last_modified.toString("yyyy-MM-dd hh:mm:ss"));
-    rowItems[0]->setData(block.file_name, Qt::UserRole + 0);
-    rowItems[1]->setData(block.size, Qt::UserRole + 0);
-    rowItems[2]->setData(Helper::getFileTypeString(block.file_name, block.is_directory), Qt::UserRole + 0);
-    rowItems[3]->setData(block.last_modified, Qt::UserRole + 0);
-    rowItems[0]->setData(block.file_index, Qt::UserRole + 1);
-    rowItems[2]->setData(block.is_directory, Qt::UserRole + 1);
-    m_fileDataModel->appendRow(rowItems);
-}
+
 
 void MainWindow::refreshTable(uint32_t targetIndex){
-    m_fileDataModel->removeRows(0, m_fileDataModel->rowCount());
+    QString driveLetter = ui->breadcrumbline->getRootLetter();
 
-
-    QString driveLetter = ui->breadcrumbline->m_pathStack.first().first.left(1);
-
+    // 拿到后端的数据
     QList<UI_Block> fileDatas = m_generalControl->get_content(driveLetter, targetIndex);
     qDebug() << " 共找到:" << fileDatas.count() << "个子项";
 
-    for (const UI_Block &block : fileDatas) {
-        appendfileData(block);
-    }
-    m_proxyModel->sort(0, Qt::AscendingOrder);
+    // 🌟 仅仅只需要这一行代码，所有的排序、更新、UI渲染全部自动搞定！
+    ui->fileDisplayerWidget->setFiles(fileDatas);
+    ui->fileDisplayerWidget->setCurrentPath(ui->breadcrumbline->getAbsolutePath());
 }
 
 void MainWindow::onScanStarted(const QString& drive_letter){
     // 第一步，清空原有数据
-    m_fileDataModel->removeRows(0, m_fileDataModel->rowCount());
+    ui->fileDisplayerWidget->setFiles(QList<UI_Block>());
     ui->breadcrumbline->setLabel("正在扫描" + drive_letter + "盘");
     ui->breadcrumbline->initRoot();
     // 第二步，锁死刷新和扫描按钮
@@ -131,7 +148,7 @@ void MainWindow::onScanStarted(const QString& drive_letter){
 void MainWindow::onScanFinished(const QString& drive_letter, uint32_t root_index){
     qDebug() << "finished";
     // 第一步，清空原有数据
-    m_fileDataModel->removeRows(0, m_fileDataModel->rowCount());
+    ui->fileDisplayerWidget->setFiles(QList<UI_Block>());
     ui->breadcrumbline->setLabel("当前路径");
     ui->breadcrumbline->initRoot();
     ui->breadcrumbline->pushNode(drive_letter + "盘", root_index);
@@ -145,7 +162,7 @@ void MainWindow::onScanFinished(const QString& drive_letter, uint32_t root_index
 
 void MainWindow::onScanError(const QString& drive_letter, const QString& error_message){
     // 第一步，清空原有数据
-    m_fileDataModel->removeRows(0, m_fileDataModel->rowCount());
+    ui->fileDisplayerWidget->setFiles(QList<UI_Block>());
     // 第二步，恢复刷新和扫描按钮
     ui->driveZone->setEnabled(true);
     ui->breadcrumbline->setEnabled(true);

@@ -30,6 +30,13 @@ qt_add_executable(Visk
     UsbScanner.h
     treemapengine.h
     treemapengine.cpp
+    filedisplaywidget.h
+    filedisplaywidget.cpp
+    tablestylewidget.h
+    tablestylewidget.cpp
+    filedisplaymodel.h
+    filedisplaymodel.cpp
+    fileislandwidget.h fileislandwidget.cpp
 )
 
 target_link_libraries(Visk

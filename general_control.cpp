@@ -652,4 +652,29 @@ std::vector<TreemapItem> general_control::get_treemap(
     // 委托给 TreemapEngine（纯计算）
     return TreemapEngine::compute(sizes, indices, names, is_dirs,
                                    0.0, 0.0, rect_w, rect_h);
+UI_Block general_control::get_target_content(const QString& drive_letter, uint32_t target_index) {
+    UI_Block block;
+    if (!drive_map.contains(drive_letter)) return block;
+
+    const drive_content& ctx = drive_map[drive_letter];
+    if (target_index == INVALID_INDEX || target_index >= ctx.memory_tree.size()) return block;
+
+    const Optimized_Node& target_node = ctx.memory_tree[target_index];
+
+    block.file_name = get_node_name(drive_letter, target_index);
+    block.size = target_node.size;
+    block.is_directory = target_node.is_dir;
+    block.total_file = target_node.total_file;
+    block.immediate_file = target_node.immediate_file;
+    block.file_index = target_index;
+    block.parent_index = target_node.parent_index;
+    block.absolute_path = get_absolute_path(drive_letter, target_index);
+
+    //时间解析
+    if (target_node.last_modified != 0) {
+        qint64 msecsSinceEpoch = (target_node.last_modified - 116444736000000000ULL) / 10000;
+        block.last_modified = QDateTime::fromMSecsSinceEpoch(msecsSinceEpoch);
+    }
+
+    return block;
 }

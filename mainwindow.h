@@ -5,6 +5,8 @@
 #include "general_control.h"
 #include "datatype.h"
 #include "breadcrumbwidget.h"
+#include "filedisplaywidget.h"
+#include "fileislandwidget.h"
 
 #include <QMainWindow>
 #include <QLabel>
@@ -12,6 +14,10 @@
 #include <QEnterEvent>
 #include <QStandardItemModel>
 #include <QSortFilterProxyModel>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QDockWidget>
+#include <QMenu>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -29,21 +35,20 @@ public:
 
 private slots:
 
-
-    void onTableDoubleClicked(const QModelIndex &index);
+    void handleFileDoubleClicked(QString name, uint32_t index, bool isDir);
 
 private:
     Ui::MainWindow *ui;
     // 文件表格
-    QStandardItemModel *m_fileDataModel = nullptr;
-    QSortFilterProxyModel *m_proxyModel = nullptr;
-    void appendfileData(const UI_Block &block);
     void refreshTable(uint32_t targetIndex);
     // 获取文件
     general_control *m_generalControl = nullptr;
     void onScanStarted(const QString& drive_letter);
     void onScanFinished(const QString& drive_letter, uint32_t root_index);
     void onScanError(const QString& drive_letter, const QString& error_message);
+    // 文件岛
+    QDockWidget *m_dockIsland;
+    fileIslandWidget *m_fileIsland;
 };
 
 

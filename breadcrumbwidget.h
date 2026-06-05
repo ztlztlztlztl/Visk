@@ -26,6 +26,10 @@ public:
 
     void setLabel(const QString& str);
 
+    QString getAbsolutePath() const;
+
+    QString getRootLetter() const;
+
 signals:
     void pathClicked(uint32_t targetIndex);
 
