@@ -708,6 +708,7 @@ std::vector<TreemapItem> general_control::get_treemap(
     return TreemapEngine::compute(sizes, indices, names, is_dirs,
                                    0.0, 0.0, rect_w, rect_h);
 }
+
 UI_Block general_control::get_target_content(const QString& drive_letter, uint32_t target_index) {
     UI_Block block;
     if (!drive_map.contains(drive_letter)) return block;
@@ -733,4 +734,70 @@ UI_Block general_control::get_target_content(const QString& drive_letter, uint32
     }
 
     return block;
+}
+
+bool general_control::change_file_extension(const file_location& target, const QString& new_extention) {
+    if (!drive_map.contains(target.drive)) {
+        qDebug() << "未找到盘符:" << target.drive;
+        return false;
+    }
+
+    drive_content& ctx = drive_map[target.drive];
+
+    if (target.index == INVALID_INDEX || target.index >= ctx.memory_tree.size()) {
+        qDebug() << "越界Index:" << target.index;
+        return false;
+    }
+
+    Optimized_Node& node = ctx.memory_tree[target.index];
+
+    //不能改文件夹
+    if (node.is_dir) {
+        qDebug() << "目标是文件夹";
+        return false;
+    }
+
+    QString old_name = get_node_name(target.drive, target.index);
+    QString old_path = get_absolute_path(target.drive, target.index);
+
+    //名字切割与重组
+    QString base_name;
+    int dot_idx = old_name.lastIndexOf('.');
+
+    if (dot_idx) {
+        base_name = old_name.left(dot_idx);
+    }
+    else {
+        //无后缀文件
+        base_name = old_name;
+    }
+
+    QString clean_extention = new_extention;
+    if (clean_extention.startsWith('.')) {
+        clean_extention.remove(0, 1);
+    }
+
+    QString new_name;
+    if (clean_extention.isEmpty()) {
+        new_name = base_name;
+    }
+    else {
+        new_name = base_name + '.' + clean_extention;
+    }
+
+    if (new_name == old_name) return true;
+
+    if (file_worker.rename_file(old_path, new_name)) {
+        std::wstring new_name_w = new_name.toStdWString();
+
+        node.name_offset = (uint32_t)ctx.string_pool.size();
+        node.name_len = (uint16_t)new_name_w.length();
+        ctx.string_pool.insert(ctx.string_pool.end(), new_name_w.begin(), new_name_w.end());
+
+        emit rename_finished();
+        return true;
+    }
+
+    qDebug() << "修改后缀失败";
+    return false;
 }
