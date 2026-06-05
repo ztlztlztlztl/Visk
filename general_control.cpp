@@ -801,3 +801,39 @@ bool general_control::change_file_extension(const file_location& target, const Q
     qDebug() << "修改后缀失败";
     return false;
 }
+
+QList<file_location> general_control::get_path_chain(const file_location& target) {
+    QList<file_location> result;
+
+    if (!drive_map.contains(target.drive)) {
+        qDebug() << "未找到盘符:" << target.drive;
+        return result;
+    }
+
+    drive_content& ctx = drive_map[target.drive];
+
+    if (target.index == INVALID_INDEX || target.index >= ctx.memory_tree.size()) {
+        qDebug() << "越界Index:" << target.index;
+        return result;
+    }
+
+    uint32_t current_idx = target.index;
+
+    while(current_idx != INVALID_INDEX) {
+        if (current_idx >= ctx.memory_tree.size()) {
+            qDebug() << "发生越界";
+            break;
+        }
+
+        file_location block;
+        block.drive = target.drive;
+        block.index = current_idx;
+
+        result.prepend(block);
+
+        const Optimized_Node& current_node = ctx.memory_tree[current_idx];
+        current_idx = current_node.parent_index;
+    }
+
+    return result;
+}
