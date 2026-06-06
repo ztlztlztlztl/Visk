@@ -271,13 +271,68 @@ const QString style_filedisplayer_table  =
         QTableView::item:selected { background-color: #E6F0FA; color: #2D3748; font-weight: 500; }
     )";
 
+const QString style_filedisplayer_search_combo  =
+    R"(
+        QComboBox {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 6px;
+            padding: 6px 14px;
+            color: #4A5568;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        QComboBox:hover, QComboBox:focus {
+            border: 1px solid #69C0A0;
+            background-color: #F7FAFC;
+        }
+        QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: top right;
+            width: 24px;
+            border-left: none;
+        }
+        QComboBox::down-arrow {
+            image: none;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid #A0AEC0;
+            margin-right: 8px;
+        }
+        QComboBox::down-arrow:on {
+            border-top: none;
+            border-bottom: 5px solid #69C0A0;
+        }
+        QComboBox QAbstractItemView {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 0px;
+            padding: 0px;
+            margin: 0px;
+            outline: none;
+            selection-background-color: #E6F7F0;
+            selection-color: #2D3748;
+        }
+        QComboBox QAbstractItemView::item {
+            color: #4A5568;
+            height: 32px;
+            padding-left: 10px;
+            border: none;
+            background: transparent;
+        }
+        QComboBox QAbstractItemView::item:hover,
+        QComboBox QAbstractItemView::item:selected {
+            background-color: #E6F7F0;
+            color: #2D3748;
+            border: none;
+            outline: none;
+        }
+    )";
 
-
-
-
-
-
-
+const QString style_filedisplayer_search_text =
+    "QLineEdit { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; padding: 6px; color: #4A5568;} QLineEdit:focus { border-color: #69C0A0; }";
+const QString style_filedisplayer_search_button =
+    "QPushButton { background-color: #69C0A0; color: white; font-weight: bold; border-radius: 6px; padding: 6px 16px; } QPushButton:hover { background-color: #58B291; }";
 
 
 

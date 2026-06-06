@@ -3,6 +3,7 @@
 
 #include "datatype.h"
 #include "treemapengine.h"
+#include "helper.h"
 
 #include <QWidget>
 #include <QPainter>

@@ -12,6 +12,9 @@
 #include <QList>
 #include <QVBoxLayout>
 #include <QSortFilterProxyModel>
+#include <QComboBox>
+#include <QPushButton>
+#include <QLineEdit>
 
 
 
@@ -75,14 +78,21 @@ public:
 
     void setTreemapData(const std::vector<TreemapItem>& data, const QString& currentDrive);
 
+    void setSearchResults(const QList<UI_Block>& results);
+
 signals:
     void onFileDoubleClicked(QString name, uint32_t index, bool isDir);
 
     void onTreemapDoubleClicked(uint32_t index, bool isDir);
     void requestTreemapUpdate(double w, double h, double exponent);
 
+    void requestSearch(QString keyword, bool isGlobal);
+
 private slots:
     void onTableIndexDoubleClicked(const QModelIndex &index);
+
+    void executeSearch();
+    void onSearchTableDoubleClicked(const QModelIndex &index);
 
 private:
 
@@ -92,6 +102,15 @@ private:
     tableStyleWidget* m_table;
 
     treemapStyleWidget* m_treemapWidget;
+
+    QWidget* m_searchTab;
+    QLineEdit* m_searchInput;
+    QComboBox* m_searchScopeCombo;
+    QPushButton* m_searchBtn;
+
+    fileDisplayModel* m_searchModel;
+    fileSortProxyModel* m_searchProxyModel;
+    tableStyleWidget* m_searchTable;
 };
 
 

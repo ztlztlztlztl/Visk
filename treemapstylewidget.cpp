@@ -21,25 +21,28 @@ void treemapStyleWidget::setExponent(double exp) {
 
 void treemapStyleWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
-
-    painter.fillRect(this->rect(), QColor(240, 240, 240));
+    painter.fillRect(this->rect(), QColor(248, 249, 250));
 
     for (const TreemapItem& item : m_data) {
-        QRectF rect(item.x, item.y, item.w, item.h);
+        QRectF rect(item.x + 1, item.y + 1, item.w - 2, item.h - 2);
 
         if (item.is_directory) {
-            painter.setBrush(QColor(173, 216, 230)); // 文件夹偏蓝
+            painter.setBrush(QColor(192, 216, 243));
         } else {
-            painter.setBrush(QColor(169, 216, 183)); // 文件偏灰
+            painter.setBrush(QColor(214, 235, 222));
         }
-        painter.setPen(QPen(Qt::white, 1)); // 白边框
+
+        painter.setPen(Qt::NoPen);
+
         painter.drawRect(rect);
 
-        // 画文字（如果方块太小就算了，免得字挤在一起）
-        if (item.w > 40 && item.h > 20) {
-            painter.setPen(Qt::black);
-            painter.drawText(rect, Qt::AlignCenter | Qt::TextWordWrap, item.name);
+        if (item.w > 45 && item.h > 35) {
+            painter.setPen(QColor("#4A5568"));
+            QString sizeStr = Helper::transToMemory(item.size);
+            QString displayText = QString("%1\n%2").arg(item.name, sizeStr);
+
+            QRectF textRect = rect.adjusted(4, 4, -4, -4);
+            painter.drawText(textRect, Qt::AlignCenter | Qt::TextWordWrap, displayText);
         }
     }
 }

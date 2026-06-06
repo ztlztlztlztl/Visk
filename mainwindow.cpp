@@ -195,7 +195,28 @@ MainWindow::MainWindow(QWidget *parent)
 
         ui->fileDisplayerWidget->setTreemapData(mapData, m_currentFileLocation.drive);
     });
+    connect(ui->fileDisplayerWidget, &fileDisplayer::requestSearch, this, [=](QString keyword, bool isGlobal) {
+        if (m_currentFileLocation.index == INVALID_INDEX || m_currentFileLocation.drive.isEmpty()) {
+            return;
+        }
 
+        QString currentDrive = m_currentFileLocation.drive;
+        uint32_t searchTargetIdx = m_currentFileLocation.index;
+
+        if (isGlobal) {
+            searchTargetIdx = m_driveRoots.value(currentDrive.toUpper(), INVALID_INDEX);
+        }
+
+        if (searchTargetIdx == INVALID_INDEX) return;
+
+        qDebug() << "【开始搜索】盘符:" << currentDrive << " 节点Idx:" << searchTargetIdx << " 关键词:" << keyword;
+
+        QList<UI_Block> searchResults = m_generalControl->search_file(currentDrive, searchTargetIdx, keyword);
+
+        qDebug() << "【搜索完成】找到" << searchResults.count() << "个结果";
+
+        ui->fileDisplayerWidget->setSearchResults(searchResults);
+    });
 
 
 
