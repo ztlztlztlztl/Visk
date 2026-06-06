@@ -33,7 +33,7 @@ folderSelectDialog::folderSelectDialog(general_control* gc, file_location startL
         if (isDir) {
             navigateTo(file_location{m_currentLoc.drive, idx});
         }
-    });
+    }, Qt::QueuedConnection);
 
     navigateTo(startLoc);
 }

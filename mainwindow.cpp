@@ -75,7 +75,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 链接函数
     connect(ui->fileDisplayerWidget, &fileDisplayer::onFileDoubleClicked,
-            this, &MainWindow::handleFileDoubleClicked);
+            this, &MainWindow::handleFileDoubleClicked, Qt::QueuedConnection);
     connect(ui->breadcrumbline, &breadcrumbWidget::pathClicked,
             this, &MainWindow::navigateTo);
     connect(m_generalControl, &general_control::scan_started,
@@ -180,7 +180,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(ui->fileDisplayerWidget, &fileDisplayer::onTreemapDoubleClicked, this, [=](uint32_t index, bool isDir) {
         handleFileDoubleClicked("", index, isDir);
-    });
+    }, Qt::QueuedConnection);
     connect(ui->fileDisplayerWidget, &fileDisplayer::requestTreemapUpdate, this, [=](double w, double h) {
         if (m_currentFileLocation.index == INVALID_INDEX || w <= 0 || h <= 0) return;
 
@@ -256,6 +256,8 @@ void MainWindow::navigateTo(const file_location& loc) {
 
 void MainWindow::onScanStarted(const QString& drive_letter) {
     ui->fileDisplayerWidget->setFiles(QList<UI_Block>());
+    ui->fileDisplayerWidget->setTreemapData(std::vector<TreemapItem>(), "");
+    m_currentFileLocation = file_location{"", INVALID_INDEX};
     ui->breadcrumbline->setLabel("正在扫描 " + drive_letter + " 盘...");
     ui->breadcrumbline->setPath(QList<QPair<QString, file_location>>());
     ui->driveZone->setEnabled(false);
@@ -275,10 +277,12 @@ void MainWindow::onScanFinished(const QString& drive_letter, uint32_t root_index
 void MainWindow::onScanError(const QString& drive_letter, const QString& error_message){
     // 第一步，清空原有数据
     ui->fileDisplayerWidget->setFiles(QList<UI_Block>());
+    ui->fileDisplayerWidget->setTreemapData(std::vector<TreemapItem>(), "");
     // 第二步，恢复刷新和扫描按钮
     ui->driveZone->setEnabled(true);
     ui->breadcrumbline->setEnabled(true);
     // 第三步，报错
+    ui->breadcrumbline->setLabel(error_message);
     qDebug() << error_message;
 }
 

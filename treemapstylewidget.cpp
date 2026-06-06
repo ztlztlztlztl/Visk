@@ -15,6 +15,8 @@ void treemapStyleWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
+    painter.fillRect(this->rect(), QColor(240, 240, 240));
+
     for (const TreemapItem& item : m_data) {
         QRectF rect(item.x, item.y, item.w, item.h);
 
