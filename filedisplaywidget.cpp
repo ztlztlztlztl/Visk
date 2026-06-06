@@ -43,7 +43,7 @@ fileDisplayer::fileDisplayer(QWidget *parent)
 
     connect(m_tabWidget, &QTabWidget::currentChanged, this, [this](int index) {
         if (index == 1) {
-            emit requestTreemapUpdate(m_treemapWidget->width(), m_treemapWidget->height());
+            emit requestTreemapUpdate(m_treemapWidget->width(), m_treemapWidget->height(), m_treemapWidget->exponent());
         }
     });
 

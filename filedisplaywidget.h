@@ -79,7 +79,7 @@ signals:
     void onFileDoubleClicked(QString name, uint32_t index, bool isDir);
 
     void onTreemapDoubleClicked(uint32_t index, bool isDir);
-    void requestTreemapUpdate(double w, double h);
+    void requestTreemapUpdate(double w, double h, double exponent);
 
 private slots:
     void onTableIndexDoubleClicked(const QModelIndex &index);

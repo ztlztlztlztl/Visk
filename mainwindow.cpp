@@ -184,13 +184,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->fileDisplayerWidget, &fileDisplayer::onTreemapDoubleClicked, this, [=](uint32_t index, bool isDir) {
         handleFileDoubleClicked("", index, isDir);
     }, Qt::QueuedConnection);
-    connect(ui->fileDisplayerWidget, &fileDisplayer::requestTreemapUpdate, this, [=](double w, double h) {
+    connect(ui->fileDisplayerWidget, &fileDisplayer::requestTreemapUpdate, this, [=](double w, double h, double exponent) {
         if (m_currentFileLocation.index == INVALID_INDEX || w <= 0 || h <= 0) return;
 
         std::vector<TreemapItem> mapData = m_generalControl->get_treemap(
             m_currentFileLocation.drive,
             m_currentFileLocation.index,
-            w, h
+            w, h, exponent
             );
 
         ui->fileDisplayerWidget->setTreemapData(mapData, m_currentFileLocation.drive);

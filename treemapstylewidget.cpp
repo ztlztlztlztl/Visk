@@ -11,6 +11,14 @@ void treemapStyleWidget::setTreemapData(const std::vector<TreemapItem>& data, co
     this->update();
 }
 
+void treemapStyleWidget::setExponent(double exp) {
+    if (m_exponent != exp) {
+        m_exponent = exp;
+        // 指数变了 → 触发重算
+        emit requestResizeUpdate(this->width(), this->height(), m_exponent);
+    }
+}
+
 void treemapStyleWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -69,7 +77,7 @@ void treemapStyleWidget::mouseDoubleClickEvent(QMouseEvent *event) {
 
 void treemapStyleWidget::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
-    emit requestResizeUpdate(this->width(), this->height());
+    emit requestResizeUpdate(this->width(), this->height(), m_exponent);
 }
 
 const TreemapItem* treemapStyleWidget::itemAt(const QPoint& pos) const {

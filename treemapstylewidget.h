@@ -21,9 +21,13 @@ public:
 
     void setTreemapData(const std::vector<TreemapItem>& data, const QString& currentDrive);
 
+    // 设置大小压缩指数：1.0=线性 0.35=推荐甜点 0.0=等分
+    void setExponent(double exp);
+    double exponent() const { return m_exponent; }
+
 signals:
     void itemDoubleClicked(uint32_t nodeIndex, bool isDir);
-    void requestResizeUpdate(double width, double height);
+    void requestResizeUpdate(double width, double height, double exponent);
 
 protected:
     // 画图
@@ -41,6 +45,7 @@ private:
     std::vector<TreemapItem> m_data;
     QString m_currentDrive;
     QPoint m_dragStartPosition;
+    double m_exponent = 0.5;
 };
 
 #endif // TREEMAPSTYLEWIDGET_H
