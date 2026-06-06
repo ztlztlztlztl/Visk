@@ -619,7 +619,8 @@ bool general_control::execute_paste(const file_location& dest_folder) {
 std::vector<TreemapItem> general_control::get_treemap(
     const QString& drive_letter,
     uint32_t target_index,
-    double rect_w, double rect_h) const
+    double rect_w, double rect_h,
+    double exponent) const
 {
     std::vector<TreemapItem> empty;
     if (!drive_map.contains(drive_letter)) return empty;
@@ -651,7 +652,9 @@ std::vector<TreemapItem> general_control::get_treemap(
 
     // 委托给 TreemapEngine（纯计算）
     return TreemapEngine::compute(sizes, indices, names, is_dirs,
-                                   0.0, 0.0, rect_w, rect_h);
+                                   0.0, 0.0, rect_w, rect_h, exponent);
+}
+
 UI_Block general_control::get_target_content(const QString& drive_letter, uint32_t target_index) {
     UI_Block block;
     if (!drive_map.contains(drive_letter)) return block;
