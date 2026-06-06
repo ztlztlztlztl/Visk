@@ -23,8 +23,9 @@ public:
 
     void setFolderOnlyMode(bool folderOnly) {
         if (m_folderOnlyMode != folderOnly) {
+            QSortFilterProxyModel::beginFilterChange();
             m_folderOnlyMode = folderOnly;
-            invalidateFilter();
+            QSortFilterProxyModel::endFilterChange();
         }
     }
 

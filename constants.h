@@ -6,9 +6,9 @@ namespace Constants{
 
     // style 区
 const QString style_drivecard_lblTitle =
-    "color: #0000ff; font-size: 16px; font-weight: bold;";
+    "color: #0000ff; font-size: 16px; font-weight: bold; background-color: transparent;";
 const QString style_drivecard_lblDetail =
-    "color: #64748b; font-size: 12px;";
+    "color: #64748b; font-size: 12px; background-color: transparent;";
 const QString style_DriveCardWidget_normal =
     "DriveCardWidget { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; }";
 const QString style_DriveCardWidget_hover =
@@ -54,6 +54,26 @@ const QString style_fileislandWidget_destination_systemcopy_text =
     "color: #00d2ff; font-weight: bold;";
 const QString style_fileselectdialog_check_button =
     "background-color: #00d2ff; color: black; font-weight: bold; padding: 5px 15px; border-radius: 3px;";
+const QString style_global =
+    "QWidget  {color: #1387c0; background-color: #faedd1;};";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
