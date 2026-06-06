@@ -96,7 +96,7 @@ private:
     void collect_task(drive_content& ctx, uint32_t node_idx, const QString& current_path, QList<file_size_task>& task_list);
 
     //搜索辅助
-    void search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result);
+    void search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result, int max_results);
 
     //内存同步函数
     void update_memory_after_delete(drive_content& ctx, uint32_t target_idx);
