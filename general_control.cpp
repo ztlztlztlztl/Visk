@@ -317,23 +317,42 @@ QList<UI_Block> general_control::search_file(const QString& drive_letter, uint32
     if (key_words.isEmpty() || !drive_map.contains(drive_letter)) return result;
 
     drive_content& ctx =drive_map[drive_letter];
-    if (target_index == INVALID_INDEX || target_index >= ctx.memory_tree.size()) return result;
+    if (target_index == INVALID_INDEX || target_index >= ctx.memory_tree.size()) {
+        qDebug() << "越界的 target_index";
+        return result;
+    }
+
+    if (!ctx.memory_tree[target_index].is_dir) {
+        qDebug() << "目标节点不是文件夹";
+        return result;
+    }
 
     //忽略大小写
     QString lower_key = key_words.toLower();
 
+    //最大搜索量
+    const int MAX_RESULTS = 5000;
+
     uint32_t child_idx = ctx.memory_tree[target_index].first_child;
 
     while (child_idx != INVALID_INDEX) {
-        search_helper(drive_letter, ctx, child_idx, lower_key, result);
+        search_helper(drive_letter, ctx, child_idx, lower_key, result, MAX_RESULTS);
+
+        if (result.size() >= MAX_RESULTS) {
+            qDebug() << "达到最大搜索数量限制，提前终止。";
+            break;
+        }
+
+        if (child_idx >= ctx.memory_tree.size()) break;
         child_idx = ctx.memory_tree[child_idx].next_sibling;
     }
 
     return result;
 }
 
-void general_control::search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result) {
-    if (node_idx == INVALID_INDEX) return;
+void general_control::search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result, int max_results) {
+    if (node_idx == INVALID_INDEX || node_idx >= ctx.memory_tree.size()) return;
+    if (result.size() >= max_results) return;
 
     const Optimized_Node& node = ctx.memory_tree[node_idx];
     QString node_name = QString::fromWCharArray(&ctx.string_pool[node.name_offset], node.name_len);
@@ -349,6 +368,10 @@ void general_control::search_helper(const QString& drive_letter, drive_content& 
         block.immediate_file = node.immediate_file;
         block.file_index = node_idx;
         block.absolute_path = get_absolute_path(drive_letter, node_idx);
+        if (node.last_modified != 0) {
+            qint64 msecsSinceEpoch = (node.last_modified - 116444736000000000ULL) / 10000;
+            block.last_modified = QDateTime::fromMSecsSinceEpoch(msecsSinceEpoch);
+        }
 
         result.append(block);
     }
@@ -356,7 +379,12 @@ void general_control::search_helper(const QString& drive_letter, drive_content& 
     //继续递归孩子
     uint32_t child_idx = node.first_child;
     while(child_idx != INVALID_INDEX) {
-        search_helper(drive_letter, ctx, child_idx, key_words, result);
+        search_helper(drive_letter, ctx, child_idx, key_words, result, max_results);
+
+        if (result.size() >= max_results) return;
+        if (child_idx >= ctx.memory_tree.size()) break;
+
+        child_idx = ctx.memory_tree[child_idx].next_sibling;
     }
 }
 
