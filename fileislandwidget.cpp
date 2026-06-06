@@ -20,7 +20,10 @@ void fileIslandWidget::setupUI() {
 
     // Object
     m_listWidget = new QListWidget(this);
-    m_listWidget->setStyleSheet(Constants::style_fileislandWidget_object_background);
+    m_listWidget->setAlternatingRowColors(true);
+    m_listWidget->setSelectionMode(QAbstractItemView::NoSelection);
+    m_listWidget->setFocusPolicy(Qt::NoFocus);
+    m_listWidget->setStyleSheet(Constants::style_fileislandWidget_object);
     mainLayout->addWidget(m_listWidget, 1);
 
     // Action
@@ -51,13 +54,16 @@ void fileIslandWidget::setupUI() {
     QVBoxLayout *rightLayout = new QVBoxLayout();
 
     m_destinationStack = new QStackedWidget(this);
+    m_destinationStack->setFrameShape(QFrame::NoFrame);
+    m_destinationStack->setLineWidth(0);
+    m_destinationStack->setStyleSheet(Constants::style_fileislandWidget_destination_stack);
 
     // 0
     m_pageEmpty = new QWidget();
     QVBoxLayout *emptyLayout = new QVBoxLayout(m_pageEmpty);
     QLabel *emptyLabel = new QLabel("请在左侧选择要执行的操作");
     emptyLabel->setAlignment(Qt::AlignCenter);
-    emptyLabel->setStyleSheet("color: #888;");
+    emptyLabel->setStyleSheet(Constants::style_fileislandWidget_destination_text);
     emptyLayout->addWidget(emptyLabel);
     m_destinationStack->addWidget(m_pageEmpty); // Index 0
 
@@ -66,7 +72,7 @@ void fileIslandWidget::setupUI() {
     QVBoxLayout *pathLayout = new QVBoxLayout(m_pagePath);
     QLabel *pathLabel = new QLabel("点击 do 按钮以选择目标文件夹", m_pagePath);
     pathLabel->setAlignment(Qt::AlignCenter);
-    pathLabel->setStyleSheet("color: #00d2ff; font-weight: bold;"); // 极客蓝提示
+    pathLabel->setStyleSheet(Constants::style_fileislandWidget_destination_text); // 极客蓝提示
     pathLayout->addWidget(pathLabel);
     m_destinationStack->addWidget(m_pagePath);  // Index 1
 
@@ -82,11 +88,14 @@ void fileIslandWidget::setupUI() {
     // 3
     m_pageRename = new QWidget();
     QHBoxLayout *renameLayout = new QHBoxLayout(m_pageRename);
+    renameLayout->setContentsMargins(16, 0, 16, 0);
+    renameLayout->setSpacing(8);
     QLabel *renameLabel = new QLabel("新后缀名:", m_pageRename);
     m_extInput = new QLineEdit(m_pageRename);
-    m_extInput->setPlaceholderText("例如: .png, .txt (记得带上点)");
+    m_extInput->setPlaceholderText("例如: .png, .txt");
     renameLayout->addWidget(renameLabel);
     renameLayout->addWidget(m_extInput);
+    m_pageRename->setStyleSheet(Constants::style_fileislandWidget_rename_page);
     m_destinationStack->addWidget(m_pageRename); // Index 3
 
     // 4
@@ -94,7 +103,7 @@ void fileIslandWidget::setupUI() {
     QVBoxLayout *sysCopyLayout = new QVBoxLayout(m_pageSystemCopy);
     QLabel *sysCopyLabel = new QLabel("点击 do 将文件放入系统剪贴板\n随后可在微信、QQ或桌面直接 Ctrl+V 粘贴", m_pageSystemCopy);
     sysCopyLabel->setAlignment(Qt::AlignCenter);
-    sysCopyLabel->setStyleSheet(Constants::style_fileislandWidget_destination_systemcopy_text); // 极客蓝提示
+    sysCopyLabel->setStyleSheet(Constants::style_fileislandWidget_destination_text); // 极客蓝提示
     sysCopyLayout->addWidget(sysCopyLabel);
     m_destinationStack->addWidget(m_pageSystemCopy); // Index 4
 
@@ -237,20 +246,22 @@ void fileIslandWidget::switchDrive(const QString &driveLetter) {
 void fileIslandWidget::refreshUI() {
     m_listWidget->clear();
     QList<file_node> currentFiles = m_islandData[m_currentDrive];
+
     for (int i = 0; i < currentFiles.count(); ++i) {
         const file_node &file = currentFiles[i];
         QListWidgetItem *item = new QListWidgetItem(m_listWidget);
         item->setSizeHint(QSize(0, 36));
         QWidget *rowContainer = new QWidget(m_listWidget);
         QHBoxLayout *rowLayout = new QHBoxLayout(rowContainer);
-        rowLayout->setContentsMargins(2, 0, 2, 0);
-        rowLayout->setSpacing(2);
+        rowLayout->setContentsMargins(8, 0, 8, 0);
+        rowLayout->setSpacing(6);
         QString displayText = QString("%1 (%2)").arg(file.filename, file.fileabsolutepath);
         QLabel *textLabel = new QLabel(displayText, rowContainer);
         rowLayout->addWidget(textLabel, 1);
         QPushButton *btnRemove = new QPushButton("-", rowContainer);
         btnRemove->setFixedSize(24, 24);
-        btnRemove->setStyleSheet(Constants::style_fileislandWidget_object_delete_button);
+        btnRemove->setObjectName("btnMinus");
+        btnRemove->setCursor(Qt::PointingHandCursor);
         btnRemove->setProperty("row_index", i);
         rowLayout->addWidget(btnRemove);
         connect(btnRemove, &QPushButton::clicked, this, &fileIslandWidget::onRemoveItemButtonClicked);

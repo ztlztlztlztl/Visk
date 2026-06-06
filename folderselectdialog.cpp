@@ -16,6 +16,7 @@ folderSelectDialog::folderSelectDialog(general_control* gc, file_location startL
     QPushButton* btnCancel = new QPushButton("取消", this);
 
     btnOk->setStyleSheet(Constants::style_fileselectdialog_check_button);
+    btnCancel->setStyleSheet(Constants::style_fileselectdialog_cancel_button);
 
     btnLayout->addStretch();
     btnLayout->addWidget(btnOk);

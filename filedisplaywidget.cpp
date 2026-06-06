@@ -12,6 +12,8 @@ fileDisplayer::fileDisplayer(QWidget *parent)
     mainLayout->setContentsMargins(0, 0, 0, 0);
     m_tabWidget = new QTabWidget(this);
 
+    m_tabWidget->setStyleSheet(Constants::style_filedisplayer_bar);
+
     m_fileModel = new fileDisplayModel(this);
 
 

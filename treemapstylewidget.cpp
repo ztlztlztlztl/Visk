@@ -21,9 +21,9 @@ void treemapStyleWidget::paintEvent(QPaintEvent *event) {
         QRectF rect(item.x, item.y, item.w, item.h);
 
         if (item.is_directory) {
-            painter.setBrush(QColor(100, 150, 250, 200)); // 文件夹偏蓝
+            painter.setBrush(QColor(173, 216, 230)); // 文件夹偏蓝
         } else {
-            painter.setBrush(QColor(150, 150, 150, 200)); // 文件偏灰
+            painter.setBrush(QColor(169, 216, 183)); // 文件偏灰
         }
         painter.setPen(QPen(Qt::white, 1)); // 白边框
         painter.drawRect(rect);

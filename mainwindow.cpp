@@ -14,10 +14,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     // 文件岛
+    ui->fileislandBtn->setCheckable(true);
+    ui->fileislandBtn->setStyleSheet(Constants::style_fileisland_call_button);
 
-    m_dockIsland = new QDockWidget("文件岛", this);
+    m_dockIsland = new QDockWidget("", this);
     m_dockIsland->setAllowedAreas(Qt::BottomDockWidgetArea);
-    m_dockIsland->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable );
+    m_dockIsland->setFeatures(QDockWidget::DockWidgetMovable);
+    m_dockIsland->setTitleBarWidget(new QWidget(m_dockIsland));
 
     m_fileIsland = new fileIslandWidget(m_dockIsland);
     m_dockIsland->setWidget(m_fileIsland);
