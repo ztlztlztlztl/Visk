@@ -1,8 +1,6 @@
 #include "treemapengine.h"
 #include <algorithm>
 #include <cmath>
-#include <limits>
-#include <QDebug>
 
 // ── 公开入口 ──────────────────────────────────────────────────────────
 std::vector<TreemapItem> TreemapEngine::compute(
@@ -73,66 +71,58 @@ std::vector<TreemapItem> TreemapEngine::compute(
 
     if (entries.empty()) return result;
 
-    // 2. 按归一化面积降序排序（大块优先 → 方形化效果更好）
+    // 3. 按归一化面积降序排序
     std::sort(entries.begin(), entries.end(),
               [](const Entry& a, const Entry& b) { return a.norm_area > b.norm_area; });
 
-    // 3. 递归布局
-    squarify(entries, 0, rect_x, rect_y, rect_w, rect_h, result);
+    // 4. 找分割点：累计面积 85% 以上的大文件走 pivot，剩余小文件走 grid
+    double total = 0.0;
+    for (const auto& e : entries) total += e.norm_area;
 
-    // ── DEBUG: 打印前 10 项的 size vs area ──
-    for (size_t i = 0; i < result.size() && i < 10; ++i) {
-        const auto& r = result[i];
-        double actual_area = r.w * r.h;
-        qDebug() << QString("[treemap #%1] %2  raw=%3  norm=%4  area=%5 (%6x%7)")
-                    .arg(i).arg(r.name)
-                    .arg(r.size)
-                    .arg(entries[i].norm_area, 0, 'f', 1)
-                    .arg(actual_area, 0, 'f', 1)
-                    .arg(r.w, 0, 'f', 1)
-                    .arg(r.h, 0, 'f', 1);
+    double cumulative = 0.0;
+    size_t split = entries.size();
+    for (size_t i = 0; i < entries.size(); ++i) {
+        cumulative += entries[i].norm_area;
+        if (cumulative >= total * 0.85) {
+            split = i + 1;
+            break;
+        }
+    }
+    if (split > entries.size()) split = entries.size();
+
+    // 5a. 大文件 → pivot，按面积比例分配上部
+    if (split > 0) {
+        double pivot_area = 0.0;
+        for (size_t i = 0; i < split; ++i) pivot_area += entries[i].norm_area;
+        double pivot_h = (pivot_area / total) * rect_h;
+        pivot_layout(entries, 0, split, rect_x, rect_y, rect_w, pivot_h, result);
+    }
+
+    // 5b. 小文件 → 网格，剩余下部
+    if (split < entries.size()) {
+        double pivot_area = 0.0;
+        for (size_t i = 0; i < split; ++i) pivot_area += entries[i].norm_area;
+        double pivot_h = (pivot_area / total) * rect_h;
+        double grid_y = rect_y + pivot_h;
+        double grid_h = rect_h - pivot_h;
+        tail_grid(entries, split, entries.size(), rect_x, grid_y, rect_w, grid_h, result);
     }
 
     return result;
 }
 
-// ── 计算一行（条）的最差长宽比 ───────────────────────────────────────
-// row: 当前行的条目列表
-// short_side: 行中所有条目共享的固定边长（矩形的短边）
-// 返回 max( w_i/h_i, h_i/w_i )，返回值 ≥ 1，越小越接近正方形
-double TreemapEngine::worst_ratio(
-    const std::vector<Entry>& row,
-    double short_side)
-{
-    if (short_side <= 0.0) return (std::numeric_limits<double>::max)();
-
-    double worst = 0.0;
-    const double s2 = short_side * short_side;
-
-    for (const Entry& e : row) {
-        double a = e.norm_area;
-        // ratio = max( a/s², s²/a )
-        double r = a / s2;
-        if (r < 1.0) r = 1.0 / r;
-        if (r > worst) worst = r;
-    }
-    return worst;
-}
-
-// ── 递归核心 ──────────────────────────────────────────────────────────
-void TreemapEngine::squarify(
+// ── Pivot 递归二分 ────────────────────────────────────────────────────
+// 每次把 items 按面积分成近似的两半，沿长边切分矩形
+void TreemapEngine::pivot_layout(
     std::vector<Entry>& entries,
-    size_t start,
+    size_t start, size_t end,
     double x, double y, double w, double h,
     std::vector<TreemapItem>& result)
 {
-    if (start >= entries.size()) return;
+    if (start >= end) return;
     if (w <= 0.0 || h <= 0.0) return;
 
-    const size_t remaining = entries.size() - start;
-
-    // 只剩一项：填满整个剩余矩形
-    if (remaining == 1) {
+    if (end - start == 1) {
         const Entry& e = entries[start];
         TreemapItem item;
         item.x = x;  item.y = y;
@@ -145,82 +135,76 @@ void TreemapEngine::squarify(
         return;
     }
 
-    // ── 确定布局方向 ──
-    // 短边 = 所有条目共享的固定边长
-    double short_side = (w >= h) ? h : w;
-
-    // ── 贪心填行 ──
-    size_t  row_end    = start;       // 行结束下标（不含）
-    double  row_sum    = 0.0;         // 行内归一化面积累加
-    double  prev_worst = (std::numeric_limits<double>::max)();
-
-    for (size_t i = start; i < entries.size(); ++i) {
-        // 临时行：当前行 + 新条目
-        std::vector<Entry> temp_row(entries.begin() + start, entries.begin() + i + 1);
-        double curr_worst = worst_ratio(temp_row, short_side);
-
-        // 变差则回退（不加这一项）
-        if (curr_worst >= prev_worst) {
-            break;
-        }
-
-        prev_worst = curr_worst;
-        row_sum   += entries[i].norm_area;
-        row_end    = i + 1;
+    // ── 找 pivot：总面积的中间点 ──
+    double total = 0.0;
+    for (size_t i = start; i < end; ++i) total += entries[i].norm_area;
+    double half = total * 0.5;
+    double cum = 0.0;
+    size_t pivot = start;
+    while (pivot < end && cum + entries[pivot].norm_area <= half) {
+        cum += entries[pivot].norm_area;
+        ++pivot;
     }
+    // 边界：至少一个 item 在左半
+    if (pivot == start) { cum += entries[start].norm_area; pivot = start + 1; }
+    if (pivot == end)   { pivot = end - 1; }
 
-    // 兜底：至少放一项
-    if (row_end == start) {
-        row_end = start + 1;
-        row_sum = entries[start].norm_area;
-    }
+    double left_area = cum;
+    double right_area = total - left_area;
 
-    // ── 放置该行 ──
+    // ── 沿长边切分 ──
     if (w >= h) {
-        // 垂直条布局：行填满整个高度，各条目从左到右按面积比例分配宽度
-        double row_width = (h > 0.0) ? (row_sum / h) : 0.0;
-        double cx = x;  // 当前 x 光标
-
-        for (size_t i = start; i < row_end; ++i) {
-            const Entry& e = entries[i];
-            double item_w = (h > 0.0) ? (e.norm_area / h) : 0.0;
-
-            TreemapItem item;
-            item.x = cx;   item.y = y;
-            item.w = item_w; item.h = h;
-            item.node_index   = e.index;
-            item.name         = e.name;
-            item.size         = e.raw_size;
-            item.is_directory = e.is_dir;
-            result.push_back(item);
-
-            cx += item_w;
-        }
-
-        // 剩余矩形在右侧
-        squarify(entries, row_end, x + row_width, y, w - row_width, h, result);
+        double left_w  = (left_area / total) * w;
+        double right_w = w - left_w;
+        pivot_layout(entries, start, pivot, x, y, left_w, h, result);
+        pivot_layout(entries, pivot, end, x + left_w, y, right_w, h, result);
     } else {
-        // 水平条布局：行填满整个宽度，各条目从上到下按面积比例分配高度
-        double row_height = (w > 0.0) ? (row_sum / w) : 0.0;
-        double cy = y;  // 当前 y 光标
+        double top_h    = (left_area / total) * h;
+        double bottom_h = h - top_h;
+        pivot_layout(entries, start, pivot, x, y, w, top_h, result);
+        pivot_layout(entries, pivot, end, x, y + top_h, w, bottom_h, result);
+    }
+}
 
-        for (size_t i = start; i < row_end; ++i) {
-            const Entry& e = entries[i];
-            double item_h = (w > 0.0) ? (e.norm_area / w) : 0.0;
+// ── 小文件网格 ────────────────────────────────────────────────────────
+// 等分网格，保证每个 item 接近正方形
+void TreemapEngine::tail_grid(
+    std::vector<Entry>& entries,
+    size_t start, size_t end,
+    double x, double y, double w, double h,
+    std::vector<TreemapItem>& result)
+{
+    size_t count = end - start;
+    if (count == 0) return;
 
-            TreemapItem item;
-            item.x = x;  item.y = cy;
-            item.w = w;  item.h = item_h;
-            item.node_index   = e.index;
-            item.name         = e.name;
-            item.size         = e.raw_size;
-            item.is_directory = e.is_dir;
-            result.push_back(item);
+    // 算格子数以接近正方形为目标
+    int cols = std::max(1, (int)std::ceil(std::sqrt(count * w / h)));
+    int rows = std::max(1, (int)std::ceil((double)count / (double)cols));
 
-            cy += item_h;
-        }
+    double cell_w = w / cols;
+    double cell_h = h / rows;
 
-        // 剩余矩形在下方
-        squarify(entries, row_end, x, y + row_height, w, h - row_height, result);
+    for (size_t i = start; i < end; ++i) {
+        const Entry& e = entries[i];
+        int idx = (int)(i - start);
+        int col = idx % cols;
+        int row = idx / cols;
+
+        // 最后一行不满 → 拉伸每项宽度填满
+        size_t row_start = start + row * cols;
+        size_t row_end   = std::min(end, row_start + cols);
+        size_t in_row    = row_end - row_start;
+        double item_w    = (in_row == (size_t)cols) ? cell_w : (w / in_row);
+
+        TreemapItem item;
+        item.x = x + col * item_w;
+        item.y = y + row * cell_h;
+        item.w = item_w;
+        item.h = cell_h;
+        item.node_index   = e.index;
+        item.name         = e.name;
+        item.size         = e.raw_size;
+        item.is_directory = e.is_dir;
+        result.push_back(item);
     }
 }

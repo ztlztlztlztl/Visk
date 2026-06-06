@@ -47,17 +47,19 @@ private:
         bool     is_dir;
     };
 
-    // 递归核心
-    static void squarify(
+    // 大文件：pivot 递归二分（面积精确，形状够大不挑）
+    static void pivot_layout(
         std::vector<Entry>& entries,
-        size_t start,                     // 当前处理的起始下标
+        size_t start, size_t end,
         double x, double y, double w, double h,
         std::vector<TreemapItem>& result);
 
-    // 计算把 row 放在长度为 row_length 的条中的最差长宽比
-    static double worst_ratio(
-        const std::vector<Entry>& row,
-        double row_length);
+    // 小文件：网格铺排（每个格子正方形，保证可见）
+    static void tail_grid(
+        std::vector<Entry>& entries,
+        size_t start, size_t end,
+        double x, double y, double w, double h,
+        std::vector<TreemapItem>& result);
 };
 
 #endif // TREEMAPENGINE_H
