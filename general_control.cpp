@@ -713,6 +713,17 @@ bool general_control::execute_paste(const file_location& dest_folder) {
         if (m_current_op == filemanager::clipboard_operation::Cut) {
             if (file_worker.rename_file(src_path, dest_path)) {
                 detach_node(ctx, src_loc.index);
+
+                QString new_safe_name = QFileInfo(dest_path).fileName();
+                if (new_safe_name != src_name) {
+                    std::wstring new_name_w = new_safe_name.toStdWString();
+                    Optimized_Node& node = ctx.memory_tree[src_loc.index];
+
+                    node.name_offset = (uint32_t)ctx.string_pool.size();
+                    node.name_len = (uint16_t)new_name_w.length();
+                    ctx.string_pool.insert(ctx.string_pool.end(), new_name_w.begin(), new_name_w.end());
+                }
+
                 attach_node(ctx, src_loc.index, dest_folder.index);
             } else {
                 all_success = false;
