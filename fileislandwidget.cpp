@@ -20,7 +20,10 @@ void fileIslandWidget::setupUI() {
 
     // Object
     m_listWidget = new QListWidget(this);
-    m_listWidget->setStyleSheet(Constants::style_fileislandWidget_object_background);
+    m_listWidget->setAlternatingRowColors(true);
+    m_listWidget->setSelectionMode(QAbstractItemView::NoSelection);
+    m_listWidget->setFocusPolicy(Qt::NoFocus);
+    m_listWidget->setStyleSheet(Constants::style_fileislandWidget_object);
     mainLayout->addWidget(m_listWidget, 1);
 
     // Action
@@ -32,11 +35,13 @@ void fileIslandWidget::setupUI() {
     m_btnCopy   = new QPushButton("复制", this);
     m_btnMove   = new QPushButton("移动", this);
     m_btnDelete = new QPushButton("删除", this);
-    m_btnRename = new QPushButton("改后缀", this);
-    QPushButton* actionBtns[] = {m_btnCopy, m_btnMove, m_btnDelete, m_btnRename};
-    int actionIds[] = {1, 2, 3, 4}; // 给每个动作编个号 (0留给空闲状态)
+    m_btnRenameExt = new QPushButton("改后缀", this);
+    m_btnRenameSingle = new QPushButton("重命名", this);
+    m_btnSystemCopy = new QPushButton("复制到剪贴板", this);
+    QPushButton* actionBtns[] = {m_btnCopy, m_btnMove, m_btnDelete, m_btnRenameExt, m_btnRenameSingle, m_btnSystemCopy};
+    int actionIds[] = {1, 2, 3, 4, 5, 6}; // 给每个动作编个号 (0留给空闲状态)
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         actionBtns[i]->setCheckable(true);
         actionBtns[i]->setFixedWidth(100);
         actionBtns[i]->setStyleSheet(Constants::style_fileislandWidget_action_button);
@@ -50,22 +55,26 @@ void fileIslandWidget::setupUI() {
     QVBoxLayout *rightLayout = new QVBoxLayout();
 
     m_destinationStack = new QStackedWidget(this);
+    m_destinationStack->setFrameShape(QFrame::NoFrame);
+    m_destinationStack->setLineWidth(0);
+    m_destinationStack->setStyleSheet(Constants::style_fileislandWidget_destination_stack);
 
     // 0
     m_pageEmpty = new QWidget();
     QVBoxLayout *emptyLayout = new QVBoxLayout(m_pageEmpty);
     QLabel *emptyLabel = new QLabel("请在左侧选择要执行的操作");
     emptyLabel->setAlignment(Qt::AlignCenter);
-    emptyLabel->setStyleSheet("color: #888;");
+    emptyLabel->setStyleSheet(Constants::style_fileislandWidget_destination_text);
     emptyLayout->addWidget(emptyLabel);
     m_destinationStack->addWidget(m_pageEmpty); // Index 0
 
     // 1
     m_pagePath = new QWidget();
-    QHBoxLayout *pathLayout = new QHBoxLayout(m_pagePath);
-    m_pathInput = new QLineEdit();
-    m_pathInput->setPlaceholderText("目标路径...");
-    pathLayout->addWidget(m_pathInput);
+    QVBoxLayout *pathLayout = new QVBoxLayout(m_pagePath);
+    QLabel *pathLabel = new QLabel("点击 do 按钮以选择目标文件夹", m_pagePath);
+    pathLabel->setAlignment(Qt::AlignCenter);
+    pathLabel->setStyleSheet(Constants::style_fileislandWidget_destination_text); // 极客蓝提示
+    pathLayout->addWidget(pathLabel);
     m_destinationStack->addWidget(m_pagePath);  // Index 1
 
     // 2
@@ -78,14 +87,39 @@ void fileIslandWidget::setupUI() {
     m_destinationStack->addWidget(m_pageDelete); // Index 2
 
     // 3
-    m_pageRename = new QWidget();
-    QHBoxLayout *renameLayout = new QHBoxLayout(m_pageRename);
-    QLabel *renameLabel = new QLabel("新后缀名:", m_pageRename);
-    m_extInput = new QLineEdit(m_pageRename);
-    m_extInput->setPlaceholderText("例如: .png, .txt (记得带上点)");
-    renameLayout->addWidget(renameLabel);
-    renameLayout->addWidget(m_extInput);
-    m_destinationStack->addWidget(m_pageRename); // Index 3
+    m_pageRenameExt = new QWidget();
+    QHBoxLayout *renameExtLayout = new QHBoxLayout(m_pageRenameExt);
+    renameExtLayout->setContentsMargins(16, 0, 16, 0);
+    renameExtLayout->setSpacing(8);
+    QLabel *renameExtLabel = new QLabel("新后缀名:", m_pageRenameExt);
+    m_extInput = new QLineEdit(m_pageRenameExt);
+    m_extInput->setPlaceholderText("例如: .png, .txt");
+    renameExtLayout->addWidget(renameExtLabel);
+    renameExtLayout->addWidget(m_extInput);
+    m_pageRenameExt->setStyleSheet(Constants::style_fileislandWidget_rename_page);
+    m_destinationStack->addWidget(m_pageRenameExt); // Index 3
+
+    // 4
+    m_pageRenameSingle = new QWidget();
+    QHBoxLayout *renameSingleLayout = new QHBoxLayout(m_pageRenameSingle);
+    renameSingleLayout->setContentsMargins(16, 0, 16, 0);
+    renameSingleLayout->setSpacing(8);
+    QLabel *renameSingleLabel = new QLabel("新文件名:", m_pageRenameSingle);
+    m_nameInput = new QLineEdit(m_pageRenameSingle);
+    m_nameInput->setPlaceholderText("仅支持单个文件重命名");
+    renameSingleLayout->addWidget(renameSingleLabel);
+    renameSingleLayout->addWidget(m_nameInput);
+    m_pageRenameSingle->setStyleSheet(Constants::style_fileislandWidget_rename_page);
+    m_destinationStack->addWidget(m_pageRenameSingle); // Index 4
+
+    // 5
+    m_pageSystemCopy = new QWidget();
+    QVBoxLayout *sysCopyLayout = new QVBoxLayout(m_pageSystemCopy);
+    QLabel *sysCopyLabel = new QLabel("点击 do 将文件放入系统剪贴板\n随后可在微信、QQ或桌面直接 Ctrl+V 粘贴", m_pageSystemCopy);
+    sysCopyLabel->setAlignment(Qt::AlignCenter);
+    sysCopyLabel->setStyleSheet(Constants::style_fileislandWidget_destination_text); // 极客蓝提示
+    sysCopyLayout->addWidget(sysCopyLabel);
+    m_destinationStack->addWidget(m_pageSystemCopy); // Index 5
 
     // Do
     m_btnDo = new QPushButton("do", this);
@@ -101,26 +135,27 @@ void fileIslandWidget::setupUI() {
     mainLayout->addLayout(rightLayout, 1);
 
     connect(m_actionGroup, &QButtonGroup::idClicked, this, &fileIslandWidget::onActionToggled);
-
     connect(m_btnDo, &QPushButton::clicked, this, &fileIslandWidget::onDoButtonClicked);
-
-    connect(m_pathInput, &QLineEdit::textChanged, this, &fileIslandWidget::checkReadyState)
-        ;
     connect(m_extInput, &QLineEdit::textChanged, this, &fileIslandWidget::checkReadyState);
+    connect(m_nameInput, &QLineEdit::textChanged, this, &fileIslandWidget::checkReadyState);
 }
 
 void fileIslandWidget::onActionToggled(int id) {
     qDebug() << "选中的动作 ID:" << id;
 
     if (id == 1 || id == 2) {
-        m_destinationStack->setCurrentIndex(1); // 复制和移动都跳到路径输入页
+        m_destinationStack->setCurrentIndex(1);
     } else if (id == 3) {
-        m_destinationStack->setCurrentIndex(2); // 预留的删除页
+        m_destinationStack->setCurrentIndex(2);
     } else if (id == 4) {
-        m_destinationStack->setCurrentIndex(3); // 预留的改后缀页
+        m_destinationStack->setCurrentIndex(3);
+    } else if (id == 5) {
+        m_destinationStack->setCurrentIndex(4);
+    }else if (id == 6) {
+        m_destinationStack->setCurrentIndex(5);
     }
 
-    checkReadyState();
+    refreshUI();
 }
 
 void fileIslandWidget::checkReadyState() {
@@ -129,12 +164,12 @@ void fileIslandWidget::checkReadyState() {
 
     bool isParamReady = false;
 
-    if (actionId == 1 || actionId == 2) {
-        isParamReady = !m_pathInput->text().trimmed().isEmpty();
-    } else if (actionId == 3) {
+    if (actionId == 1 || actionId == 2 || actionId == 3 || actionId == 6) {
         isParamReady = true;
     } else if (actionId == 4) {
         isParamReady = !m_extInput->text().trimmed().isEmpty();
+    }else if (actionId == 5) {
+        isParamReady = (m_listWidget->count() == 1) && !m_nameInput->text().trimmed().isEmpty();
     }
     m_btnDo->setEnabled(hasFiles && (actionId != -1) && isParamReady);
 }
@@ -152,25 +187,39 @@ void fileIslandWidget::onDoButtonClicked() {
     }
     switch (actionId) {
     case 1:
-        qDebug() << "请求复制到:" << m_pathInput->text();
-        emit requestCopyMove(targets, m_pathInput->text(), false);
+        qDebug() << "请求复制";
+        emit requestCopyMoveDialog(targets, false);
         break;
 
     case 2:
-        qDebug() << "请求移动到:" << m_pathInput->text();
-        emit requestCopyMove(targets, m_pathInput->text(), true);
+        qDebug() << "请求移动";
+        emit requestCopyMoveDialog(targets, true);
         break;
 
     case 3:
         qDebug() << "请求批量删除" << targets.size() << "个文件";
+        qDebug() << targets[0].drive;
         emit requestDelete(targets);
         break;
 
-    case 4:
+    case 4:{
         QString newExt = m_extInput->text();
         if (!newExt.startsWith(".")) newExt.prepend(".");
         qDebug() << "请求批量改后缀为:" << newExt;
         emit requestRenameExt(targets, newExt);
+        break;
+    }
+
+    case 5:{
+        QString newName = m_nameInput->text().trimmed();
+        qDebug() << "请求单文件重命名为:" << newName;
+        emit requestRenameSingle(targets[0], newName);
+        break;
+    }
+
+    case 6:
+        qDebug() << "请求复制到系统剪贴板";
+        emit requestSystemCopy(targets);
         break;
     }
     m_islandData[m_currentDrive].clear();
@@ -223,25 +272,43 @@ void fileIslandWidget::switchDrive(const QString &driveLetter) {
 void fileIslandWidget::refreshUI() {
     m_listWidget->clear();
     QList<file_node> currentFiles = m_islandData[m_currentDrive];
+
     for (int i = 0; i < currentFiles.count(); ++i) {
         const file_node &file = currentFiles[i];
         QListWidgetItem *item = new QListWidgetItem(m_listWidget);
         item->setSizeHint(QSize(0, 36));
         QWidget *rowContainer = new QWidget(m_listWidget);
         QHBoxLayout *rowLayout = new QHBoxLayout(rowContainer);
-        rowLayout->setContentsMargins(2, 0, 2, 0);
-        rowLayout->setSpacing(2);
+        rowLayout->setContentsMargins(8, 0, 8, 0);
+        rowLayout->setSpacing(6);
         QString displayText = QString("%1 (%2)").arg(file.filename, file.fileabsolutepath);
         QLabel *textLabel = new QLabel(displayText, rowContainer);
         rowLayout->addWidget(textLabel, 1);
         QPushButton *btnRemove = new QPushButton("-", rowContainer);
         btnRemove->setFixedSize(24, 24);
-        btnRemove->setStyleSheet(Constants::style_fileislandWidget_object_delete_button);
+        btnRemove->setObjectName("btnMinus");
+        btnRemove->setCursor(Qt::PointingHandCursor);
         btnRemove->setProperty("row_index", i);
         rowLayout->addWidget(btnRemove);
         connect(btnRemove, &QPushButton::clicked, this, &fileIslandWidget::onRemoveItemButtonClicked);
         m_listWidget->setItemWidget(item, rowContainer);
     }
+
+    int actionId = m_actionGroup->checkedId();
+    if (actionId == 5) {
+        if (currentFiles.count() == 1) {
+            QString fileName = currentFiles[0].filename;
+            m_nameInput->setText(fileName);
+            int lastDotIdx = fileName.lastIndexOf('.');
+            int selectLength = (lastDotIdx > 0) ? lastDotIdx : fileName.length();
+            m_nameInput->setFocus();
+            m_nameInput->setSelection(0, selectLength);
+        }
+        else {
+            m_nameInput->clear();
+        }
+    }
+
     checkReadyState();
 }
 
@@ -257,15 +324,18 @@ void fileIslandWidget::dragEnterEvent(QDragEnterEvent *event) {
 void fileIslandWidget::dropEvent(QDropEvent *event) {
     QString dropText = event->mimeData()->text();
     QStringList lines = dropText.split('\n', Qt::SkipEmptyParts);
+    QList<file_location> droppedLocs;
+
     for (const QString &line : lines) {
-        // 协议格式是： "index|filename|absolutepath"
         QStringList parts = line.split('|');
-        if (parts.size() == 3) {
-            uint32_t index = parts[0].toUInt();
-            QString name = parts[1];
-            QString path = parts[2];
-            addFileToCurrentIsland(name, index, path);
+        if (parts.size() == 2) {
+            file_location loc = {parts[0], parts[1].toUInt()};
+            droppedLocs.append(loc);
         }
+    }
+
+    if (!droppedLocs.isEmpty()) {
+        emit filesDropped(droppedLocs);
     }
 
     event->acceptProposedAction();

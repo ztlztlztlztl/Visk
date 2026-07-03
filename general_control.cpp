@@ -245,7 +245,7 @@ QString general_control::get_node_name(const QString& drive_letter, uint32_t nod
     if (!drive_map.contains(drive_letter)) return "";
     const drive_content& ctx = drive_map[drive_letter];
 
-    if (node_index == INVALID_INDEX || node_index >= ctx.string_pool.size()) return "";
+    if (node_index == INVALID_INDEX || node_index >= ctx.memory_tree.size()) return "";
     const Optimized_Node& node = ctx.memory_tree[node_index];
     return QString::fromWCharArray(&ctx.string_pool[node.name_offset], node.name_len);
 }
@@ -292,12 +292,19 @@ QString general_control::get_absolute_path(const QString& drive_letter, uint32_t
     if (!drive_map.contains(drive_letter) || node_index == INVALID_INDEX) return "";
 
     const drive_content& ctx = drive_map[drive_letter];
+    if (node_index >= ctx.memory_tree.size()) return "";
 
     QStringList path_part;
     uint32_t current_idx = node_index;
 
     while(current_idx != INVALID_INDEX) {
-        if (current_idx != INVALID_INDEX) path_part.prepend(get_node_name(drive_letter, current_idx));
+        if (current_idx >= ctx.memory_tree.size()) {
+            qDebug() << "路径爬升中发生越界，强行阻断";
+            break;
+        }
+        if (current_idx != ctx.root_idx) {
+            path_part.prepend(get_node_name(drive_letter, current_idx));
+        }
         current_idx = ctx.memory_tree[current_idx].parent_index;
     }
 
@@ -310,23 +317,42 @@ QList<UI_Block> general_control::search_file(const QString& drive_letter, uint32
     if (key_words.isEmpty() || !drive_map.contains(drive_letter)) return result;
 
     drive_content& ctx =drive_map[drive_letter];
-    if (target_index == INVALID_INDEX || target_index >= ctx.memory_tree.size()) return result;
+    if (target_index == INVALID_INDEX || target_index >= ctx.memory_tree.size()) {
+        qDebug() << "越界的 target_index";
+        return result;
+    }
+
+    if (!ctx.memory_tree[target_index].is_dir) {
+        qDebug() << "目标节点不是文件夹";
+        return result;
+    }
 
     //忽略大小写
     QString lower_key = key_words.toLower();
 
+    //最大搜索量
+    const int MAX_RESULTS = 5000;
+
     uint32_t child_idx = ctx.memory_tree[target_index].first_child;
 
     while (child_idx != INVALID_INDEX) {
-        search_helper(drive_letter, ctx, child_idx, lower_key, result);
+        search_helper(drive_letter, ctx, child_idx, lower_key, result, MAX_RESULTS);
+
+        if (result.size() >= MAX_RESULTS) {
+            qDebug() << "达到最大搜索数量限制，提前终止。";
+            break;
+        }
+
+        if (child_idx >= ctx.memory_tree.size()) break;
         child_idx = ctx.memory_tree[child_idx].next_sibling;
     }
 
     return result;
 }
 
-void general_control::search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result) {
-    if (node_idx == INVALID_INDEX) return;
+void general_control::search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result, int max_results) {
+    if (node_idx == INVALID_INDEX || node_idx >= ctx.memory_tree.size()) return;
+    if (result.size() >= max_results) return;
 
     const Optimized_Node& node = ctx.memory_tree[node_idx];
     QString node_name = QString::fromWCharArray(&ctx.string_pool[node.name_offset], node.name_len);
@@ -342,6 +368,10 @@ void general_control::search_helper(const QString& drive_letter, drive_content& 
         block.immediate_file = node.immediate_file;
         block.file_index = node_idx;
         block.absolute_path = get_absolute_path(drive_letter, node_idx);
+        if (node.last_modified != 0) {
+            qint64 msecsSinceEpoch = (node.last_modified - 116444736000000000ULL) / 10000;
+            block.last_modified = QDateTime::fromMSecsSinceEpoch(msecsSinceEpoch);
+        }
 
         result.append(block);
     }
@@ -349,7 +379,12 @@ void general_control::search_helper(const QString& drive_letter, drive_content& 
     //继续递归孩子
     uint32_t child_idx = node.first_child;
     while(child_idx != INVALID_INDEX) {
-        search_helper(drive_letter, ctx, child_idx, key_words, result);
+        search_helper(drive_letter, ctx, child_idx, key_words, result, max_results);
+
+        if (result.size() >= max_results) return;
+        if (child_idx >= ctx.memory_tree.size()) break;
+
+        child_idx = ctx.memory_tree[child_idx].next_sibling;
     }
 }
 
@@ -357,14 +392,31 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
     bool all_success = true;
 
     for (const file_location& location : std::as_const(targets)) {
-        if (!drive_map.contains(location.drive)) continue;
+        if (!drive_map.contains(location.drive)) {
+            emit operation_error("删除文件", QString("未找到目标盘符: %1盘，操作已跳过。").arg(location.drive));
+            all_success = false;
+            continue;
+        }
         //获取绝对路径
         drive_content& ctx =drive_map[location.drive];
+
+        if (location.index == INVALID_INDEX || location.index >= ctx.memory_tree.size()) {
+            qDebug() << "拦截到越界驱动器:" << location.drive << " 传入Index:" << location.index << " 实际树大小:" << ctx.memory_tree.size();
+            all_success = false;
+            continue;
+        }
+
         QString absolute_path = get_absolute_path(location.drive, location.index);
         if (file_worker.delete_file(absolute_path)) {
             update_memory_after_delete(ctx, location.index);
         }
         else {
+            emit operation_error("删除文件", QString("物理删除被系统拒绝，文件可能被其他程序占用或权限不足：\n%1").arg(absolute_path));
+            QFileInfo check_info(absolute_path);
+            qDebug() << "删除失败";
+            qDebug() << "尝试删除的绝对路径:" << absolute_path;
+            qDebug() << "该路径在硬盘上是否存在:" << check_info.exists();
+            qDebug() << "是否有只读属性:" << !check_info.isWritable();
             all_success = false;
         }
     }
@@ -374,9 +426,19 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
 }
 
 bool general_control::renameFile(const file_location& target, const QString& new_name) {
-    if (!drive_map.contains(target.drive)) return false;
+    if (!drive_map.contains(target.drive)) {
+        qDebug() << "未找到盘符" << target.drive;
+        emit operation_error("重命名", QString("未找到目标盘符: %1盘。").arg(target.drive));
+        return false;
+    }
 
     drive_content& ctx = drive_map[target.drive];
+
+    if (target.index == INVALID_INDEX || target.index >= ctx.memory_tree.size()) {
+        qDebug() << "越界的Index:" << target.index;
+        return false;
+    }
+
     QString old_path = get_absolute_path(target.drive, target.index);
 
     if (file_worker.rename_file(old_path, new_name)) {
@@ -388,10 +450,12 @@ bool general_control::renameFile(const file_location& target, const QString& new
 
         ctx.string_pool.insert(ctx.string_pool.end(), new_name_w.begin(), new_name_w.end());
 
+        emit rename_finished();
         return true;
     }
 
-    emit rename_finished();
+    emit operation_error("重命名", QString("重命名失败，当前目录下可能存在同名文件，或者文件正在被使用：\n%1").arg(old_path));
+    qDebug() << "重命名失败" << old_path;
     return false;
 }
 
@@ -542,20 +606,93 @@ uint32_t general_control::update_memory_after_copy(drive_content& ctx, uint32_t 
     return new_index;
 }
 
+bool general_control::setClipboard(const QList<file_location>& targets, filemanager::clipboard_operation operation) {
+    if (operation == filemanager::clipboard_operation::None || targets.isEmpty()) {
+        m_clipboard_targets.clear();
+        m_current_op = filemanager::clipboard_operation::None;
+        return true;
+    }
+
+    QList<file_location> valid_targets;
+
+    //逐一校验目标
+    for (const file_location& location : targets) {
+        if (!drive_map.contains(location.drive)) {
+            qDebug() << "未知盘符" << location.drive;
+            continue;
+        }
+
+        const drive_content& ctx = drive_map[location.drive];
+
+        if (location.index == INVALID_INDEX || location.index >= ctx.memory_tree.size()) {
+            qDebug() << "越界/失效的Index:" << location.index;
+            continue;
+        }
+
+        if (location.index == ctx.root_idx) {
+            qDebug() << "不允许对整个盘符根目录执行操作";
+            continue;
+        }
+
+        file_location valid_loc;
+        valid_loc.drive = location.drive;
+        valid_loc.index = location.index;
+        valid_targets.append(valid_loc);
+    }
+
+    if (valid_targets.isEmpty()) {
+        qDebug() << "cnm,全是非法数据";
+        m_clipboard_targets.clear();
+        m_current_op = filemanager::clipboard_operation::None;
+        return false;
+    }
+
+    m_clipboard_targets = valid_targets;
+    m_current_op = operation;
+
+    qDebug() << "操作:"
+             << (operation == filemanager::clipboard_operation::Copy ? "Copy" : "Cut")
+             << " | 有效文件数:" << m_clipboard_targets.size();
+
+    return true;
+}
+
 bool general_control::execute_paste(const file_location& dest_folder) {
     if (m_clipboard_targets.isEmpty() || m_current_op == filemanager::clipboard_operation::None) {
         return false;
     }
 
     QString target_drive = dest_folder.drive;
-    if (!drive_map.contains(target_drive)) return false;
+
+    if (!drive_map.contains(target_drive)) {
+        qDebug() << "未找到盘符" << target_drive;
+        return false;
+    }
+
     drive_content& ctx = drive_map[target_drive];
+
+    if (dest_folder.index == INVALID_INDEX || dest_folder.index >= ctx.memory_tree.size()) {
+        qDebug() << "Index越界:" << dest_folder.index;
+        return false;
+    }
+
+    if (!ctx.memory_tree[dest_folder.index].is_dir) {
+        qDebug() << "目标不是文件夹，无法执行粘贴！";
+        return false;
+    }
 
     bool all_success = true;
 
     for (const file_location& src_loc : std::as_const(m_clipboard_targets)) {
-        //跨盘符暂不处理
         if (src_loc.drive != target_drive) {
+            emit operation_error("粘贴文件", QString("暂不支持跨磁盘复制或剪切！\n无法将文件从 %1盘 移动到 %2盘。").arg(src_loc.drive).arg(target_drive));
+            qDebug() << "不能跨盘符：" <<target_drive;
+            all_success = false;
+            continue;
+        }
+
+        if (src_loc.index == INVALID_INDEX || src_loc.index >= ctx.memory_tree.size()) {
+            qDebug() << "源Index越界/已失效 ->" << src_loc.index;
             all_success = false;
             continue;
         }
@@ -568,6 +705,8 @@ bool general_control::execute_paste(const file_location& dest_folder) {
         QString norm_src = QDir::cleanPath(src_path) + "/";
         QString norm_dest = QDir::cleanPath(dest_dir_path) + "/";
         if (norm_dest.startsWith(norm_src, Qt::CaseInsensitive)) {
+            emit operation_error("粘贴文件", "危险操作已拦截：企图将文件夹复制或剪切到其自身的内部！");
+            qDebug() << "文件夹不能复制到自身内";
             all_success = false;
             continue;
         }
@@ -580,8 +719,20 @@ bool general_control::execute_paste(const file_location& dest_folder) {
         if (m_current_op == filemanager::clipboard_operation::Cut) {
             if (file_worker.rename_file(src_path, dest_path)) {
                 detach_node(ctx, src_loc.index);
+
+                QString new_safe_name = QFileInfo(dest_path).fileName();
+                if (new_safe_name != src_name) {
+                    std::wstring new_name_w = new_safe_name.toStdWString();
+                    Optimized_Node& node = ctx.memory_tree[src_loc.index];
+
+                    node.name_offset = (uint32_t)ctx.string_pool.size();
+                    node.name_len = (uint16_t)new_name_w.length();
+                    ctx.string_pool.insert(ctx.string_pool.end(), new_name_w.begin(), new_name_w.end());
+                }
+
                 attach_node(ctx, src_loc.index, dest_folder.index);
             } else {
+                emit operation_error("剪切文件", QString("物理剪切失败，文件可能被系统占用：\n%1").arg(src_path));
                 all_success = false;
             }
         }
@@ -600,6 +751,8 @@ bool general_control::execute_paste(const file_location& dest_folder) {
                 uint32_t cloned_idx = update_memory_after_copy(ctx, src_loc.index, dest_folder.index, new_safe_name);
                 attach_node(ctx, cloned_idx, dest_folder.index);
             } else {
+                emit operation_error("复制文件", QString("物理拷贝失败，可能是目标磁盘空间不足或无权限：\n%1").arg(src_path));
+                qDebug() << "复制失败";
                 all_success = false;
             }
         }
@@ -680,4 +833,106 @@ UI_Block general_control::get_target_content(const QString& drive_letter, uint32
     }
 
     return block;
+}
+
+bool general_control::change_file_extension(const file_location& target, const QString& new_extention) {
+    if (!drive_map.contains(target.drive)) {
+        qDebug() << "未找到盘符:" << target.drive;
+        return false;
+    }
+
+    drive_content& ctx = drive_map[target.drive];
+
+    if (target.index == INVALID_INDEX || target.index >= ctx.memory_tree.size()) {
+        qDebug() << "越界Index:" << target.index;
+        return false;
+    }
+
+    Optimized_Node& node = ctx.memory_tree[target.index];
+
+    //不能改文件夹
+    if (node.is_dir) {
+        qDebug() << "目标是文件夹";
+        return false;
+    }
+
+    QString old_name = get_node_name(target.drive, target.index);
+    QString old_path = get_absolute_path(target.drive, target.index);
+
+    //名字切割与重组
+    QString base_name;
+    int dot_idx = old_name.lastIndexOf('.');
+
+    if (dot_idx > 0) {
+        base_name = old_name.left(dot_idx);
+    }
+    else {
+        //无后缀文件
+        base_name = old_name;
+    }
+
+    QString clean_extention = new_extention;
+    if (clean_extention.startsWith('.')) {
+        clean_extention.remove(0, 1);
+    }
+
+    QString new_name;
+    if (clean_extention.isEmpty()) {
+        new_name = base_name;
+    }
+    else {
+        new_name = base_name + '.' + clean_extention;
+    }
+
+    if (new_name == old_name) return true;
+
+    if (file_worker.rename_file(old_path, new_name)) {
+        std::wstring new_name_w = new_name.toStdWString();
+
+        node.name_offset = (uint32_t)ctx.string_pool.size();
+        node.name_len = (uint16_t)new_name_w.length();
+        ctx.string_pool.insert(ctx.string_pool.end(), new_name_w.begin(), new_name_w.end());
+
+        emit rename_finished();
+        return true;
+    }
+
+    qDebug() << "修改后缀失败";
+    return false;
+}
+
+QList<file_location> general_control::get_path_chain(const file_location& target) {
+    QList<file_location> result;
+
+    if (!drive_map.contains(target.drive)) {
+        qDebug() << "未找到盘符:" << target.drive;
+        return result;
+    }
+
+    drive_content& ctx = drive_map[target.drive];
+
+    if (target.index == INVALID_INDEX || target.index >= ctx.memory_tree.size()) {
+        qDebug() << "越界Index:" << target.index;
+        return result;
+    }
+
+    uint32_t current_idx = target.index;
+
+    while(current_idx != INVALID_INDEX) {
+        if (current_idx >= ctx.memory_tree.size()) {
+            qDebug() << "发生越界";
+            break;
+        }
+
+        file_location block;
+        block.drive = target.drive;
+        block.index = current_idx;
+
+        result.prepend(block);
+
+        const Optimized_Node& current_node = ctx.memory_tree[current_idx];
+        current_idx = current_node.parent_index;
+    }
+
+    return result;
 }

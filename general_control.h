@@ -66,11 +66,15 @@ public:
     //直接获取idx的内容
     UI_Block get_target_content(const QString& drive_letter, uint32_t target_index);
 
+    //获取文件路径链
+    QList<file_location> get_path_chain(const file_location& target);
+
     //文件操作函数
     bool renameFile(const file_location& target, const QString& new_name);
     bool deleteFile(const QList<file_location>& targets);
     bool setClipboard(const QList<file_location>& targets, filemanager::clipboard_operation operation);
     bool execute_paste(const file_location& destination_folder);
+    bool change_file_extension(const file_location& target_file, const QString& new_extention);
 
 signals:
     //扫盘相关信号
@@ -86,6 +90,9 @@ signals:
     //U盘热插拔信号
     void usb_device_changed();
 
+    //统一报错信号
+    void operation_error(const QString& action_name, const QString& error_message);
+
 private slots:
     void scan_thread_finish();
 
@@ -96,7 +103,7 @@ private:
     void collect_task(drive_content& ctx, uint32_t node_idx, const QString& current_path, QList<file_size_task>& task_list);
 
     //搜索辅助
-    void search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result);
+    void search_helper(const QString& drive_letter, drive_content& ctx, uint32_t node_idx, const QString& key_words, QList<UI_Block>& result, int max_results);
 
     //内存同步函数
     void update_memory_after_delete(drive_content& ctx, uint32_t target_idx);

@@ -27,6 +27,8 @@ public:
     void showIsland();
     void hideIsland();
     void switchDrive(const QString &driveLetter);
+    // 添加文件
+    void addFileToCurrentIsland(QString name, uint32_t index, QString absolutePath);
 
 protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -35,7 +37,11 @@ protected:
 signals:
     void requestDelete(const QList<file_location>& targets);
     void requestRenameExt(const QList<file_location>& targets, const QString& newExt);
-    void requestCopyMove(const QList<file_location>& targets, const QString& destPath, bool isMove);
+    void requestCopyMoveDialog(const QList<file_location>& targets, bool isMove);
+    void requestSystemCopy(const QList<file_location>& targets);
+    void filesDropped(const QList<file_location>& locs);
+    void requestRenameSingle(const file_location& target, const QString& newName);
+
 
 
 private slots:
@@ -61,7 +67,9 @@ private:
     QPushButton *m_btnCopy;
     QPushButton *m_btnMove;
     QPushButton *m_btnDelete;
-    QPushButton *m_btnRename;
+    QPushButton *m_btnRenameSingle;
+    QPushButton *m_btnRenameExt;
+    QPushButton *m_btnSystemCopy;
 
     // Destination
     QStackedWidget *m_destinationStack;
@@ -71,22 +79,28 @@ private:
 
     // Page 1：复制/移动
     QWidget *m_pagePath;
-    QLineEdit *m_pathInput;
 
     // Page 2：删除
     QWidget *m_pageDelete;
     QLabel *m_deleteWarning;
 
     // Page 3：改后缀
-    QWidget *m_pageRename;
+    QWidget *m_pageRenameExt;
     QLineEdit *m_extInput;
+
+    // Page 4：复制到剪贴板
+    QWidget *m_pageSystemCopy;
+
+    // Page 5: 改名字
+    QWidget *m_pageRenameSingle;
+    QLineEdit *m_nameInput;
 
     // 执行按钮
     QPushButton *m_btnDo;
     // 数据
     QString m_currentDrive;
     QMap<QString, QList<file_node>> m_islandData;
-    void addFileToCurrentIsland(QString name, uint32_t index, QString absolutePath);
+
 
     void refreshUI();
 };

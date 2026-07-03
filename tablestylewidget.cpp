@@ -25,10 +25,16 @@ void tableStyleWidget::setupTableAppearance() {
     m_tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     // 隐藏行号
     m_tableView->verticalHeader()->setVisible(false);
-    // 交替行颜色
-    m_tableView->setAlternatingRowColors(true);
     // 取消网格线
     m_tableView->setShowGrid(false);
+
+    m_tableView->setAlternatingRowColors(true);
+
+    m_tableView->setFrameShape(QFrame::NoFrame);
+    m_tableView->setShowGrid(false);
+    m_tableView->setFocusPolicy(Qt::NoFocus);
+
+    m_tableView->setStyleSheet(Constants::style_filedisplayer_table);
 
     QHeaderView *header = m_tableView->horizontalHeader();
 

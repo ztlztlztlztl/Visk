@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <QDebug>
 
 // ── 公开入口 ──────────────────────────────────────────────────────────
 std::vector<TreemapItem> TreemapEngine::compute(
@@ -20,10 +21,37 @@ std::vector<TreemapItem> TreemapEngine::compute(
     if (n == 0) return result;
     if (rect_w <= 0.0 || rect_h <= 0.0) return result;
 
-    // 1. 计算总字节数，构建内部条目
-    qint64 total_bytes = 0;
-    for (qint64 sz : sizes) total_bytes += sz;
-    if (total_bytes <= 0) return result;
+    // 1. 先算所有 pow 值，同时记录最大值
+    std::vector<double> pows(n);
+    double max_pow = 0.0;
+
+    for (size_t i = 0; i < n; ++i) {
+        if (sizes[i] <= 0) continue;
+        double t;
+        if (exponent <= 0.0) {
+            t = 1.0;
+        } else if (exponent == 1.0) {
+            t = static_cast<double>(sizes[i]);
+        } else {
+            t = std::pow(static_cast<double>(sizes[i]), exponent);
+        }
+        pows[i] = t;
+        if (t > max_pow) max_pow = t;
+    }
+
+    // 2. 底薪 = 最大的 pow × floorRatio；提成 = pow
+    //    transformed = floor + pow   （保底 + 按比例）
+    double floor = max_pow * floorRatio;
+    std::vector<double> transformed(n);
+    double sum_transformed = 0.0;
+
+    for (size_t i = 0; i < n; ++i) {
+        if (sizes[i] <= 0) continue;
+        transformed[i] = floor + pows[i];
+        sum_transformed += transformed[i];
+    }
+
+    if (sum_transformed <= 0.0) return result;
 
     std::vector<Entry> entries;
     entries.reserve(n);
@@ -71,6 +99,20 @@ std::vector<TreemapItem> TreemapEngine::compute(
 
     // 3. 递归布局
     squarify(entries, 0, rect_x, rect_y, rect_w, rect_h, result);
+
+    // ── DEBUG: 打印前 10 项的 size vs area ──
+    for (size_t i = 0; i < result.size() && i < 10; ++i) {
+        const auto& r = result[i];
+        double actual_area = r.w * r.h;
+        qDebug() << QString("[treemap #%1] %2  raw=%3  norm=%4  area=%5 (%6x%7)")
+                    .arg(i).arg(r.name)
+                    .arg(r.size)
+                    .arg(entries[i].norm_area, 0, 'f', 1)
+                    .arg(actual_area, 0, 'f', 1)
+                    .arg(r.w, 0, 'f', 1)
+                    .arg(r.h, 0, 'f', 1);
+    }
+
     return result;
 }
 
@@ -82,7 +124,7 @@ double TreemapEngine::worst_ratio(
     const std::vector<Entry>& row,
     double short_side)
 {
-    if (short_side <= 0.0) return std::numeric_limits<double>::max();
+    if (short_side <= 0.0) return (std::numeric_limits<double>::max)();
 
     double worst = 0.0;
     const double s2 = short_side * short_side;
@@ -130,7 +172,7 @@ void TreemapEngine::squarify(
     // ── 贪心填行 ──
     size_t  row_end    = start;       // 行结束下标（不含）
     double  row_sum    = 0.0;         // 行内归一化面积累加
-    double  prev_worst = std::numeric_limits<double>::max();
+    double  prev_worst = (std::numeric_limits<double>::max)();
 
     for (size_t i = start; i < entries.size(); ++i) {
         // 临时行：当前行 + 新条目

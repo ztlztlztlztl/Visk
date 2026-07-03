@@ -97,16 +97,20 @@ QStringList fileDisplayModel::mimeTypes() const {
 QMimeData *fileDisplayModel::mimeData(const QModelIndexList &indexes) const {
     QMimeData *mimeData = new QMimeData();
     QStringList payloadList;
+
+    QString drive = m_currentBasePath.left(1).toUpper();
+
     for (const QModelIndex &index : indexes) {
         if (index.column() == 0) {
             uint32_t fileIndex = data(index, fileIndexRole).toUInt();
-            QString fileName = data(index, fileNameRole).toString();
-            QString absolutePath = QDir(m_currentBasePath).filePath(fileName);
-            QString payload = QString("%1|%2|%3").arg(fileIndex).arg(fileName, absolutePath);
+
+            QString payload = QString("%1|%2").arg(drive).arg(fileIndex);
             payloadList.append(payload);
         }
     }
+
     mimeData->setText(payloadList.join('\n'));
+    qDebug() << "【移到岛上】" << drive;
     return mimeData;
 }
 

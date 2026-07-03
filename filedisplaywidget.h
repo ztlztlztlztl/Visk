@@ -4,6 +4,7 @@
 #include "datatype.h"
 #include "filedisplaymodel.h"
 #include "tablestylewidget.h"
+#include "treemapstylewidget.h"
 
 
 #include <QWidget>
@@ -11,14 +12,36 @@
 #include <QList>
 #include <QVBoxLayout>
 #include <QSortFilterProxyModel>
+#include <QComboBox>
+#include <QPushButton>
+#include <QLineEdit>
 
 
 
 class fileSortProxyModel : public QSortFilterProxyModel {
+    Q_OBJECT
 public:
     explicit fileSortProxyModel(QObject *parent = nullptr)
-        : QSortFilterProxyModel(parent) {}
+        : QSortFilterProxyModel(parent), m_folderOnlyMode(false) {}
+
+    void setFolderOnlyMode(bool folderOnly) {
+        if (m_folderOnlyMode != folderOnly) {
+            QSortFilterProxyModel::beginFilterChange();
+            m_folderOnlyMode = folderOnly;
+            QSortFilterProxyModel::endFilterChange();
+        }
+    }
+
 protected:
+    bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const override {
+        if (m_folderOnlyMode) {
+            QModelIndex idx = sourceModel()->index(source_row, 0, source_parent);
+            bool isDir = sourceModel()->data(idx, fileDisplayModel::fileIsDirRole).toBool();
+            if (!isDir) return false;
+        }
+        return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+    }
+
     bool lessThan(const QModelIndex &left, const QModelIndex &right) const override {
         int col = left.column();
         if (col == 1) {
@@ -33,6 +56,9 @@ protected:
         }
         return QSortFilterProxyModel::lessThan(left, right);
     }
+
+private:
+    bool m_folderOnlyMode; // 记忆当前模式
 };
 
 
@@ -48,19 +74,43 @@ public:
 
     void setCurrentPath(const QString &path);
 
+    void setFolderOnlyMode(bool folderOnly);
+
+    void setTreemapData(const std::vector<TreemapItem>& data, const QString& currentDrive);
+
+    void setSearchResults(const QList<UI_Block>& results);
+
 signals:
     void onFileDoubleClicked(QString name, uint32_t index, bool isDir);
+
+    void onTreemapDoubleClicked(uint32_t index, bool isDir);
+    void requestTreemapUpdate(double w, double h, double exponent);
+
+    void requestSearch(QString keyword, bool isGlobal);
 
 private slots:
     void onTableIndexDoubleClicked(const QModelIndex &index);
 
+    void executeSearch();
+    void onSearchTableDoubleClicked(const QModelIndex &index);
+
 private:
 
-
-    QSortFilterProxyModel* m_proxyModel;
+    fileSortProxyModel* m_proxyModel;
     fileDisplayModel* m_fileModel;
     QTabWidget* m_tabWidget;
     tableStyleWidget* m_table;
+
+    treemapStyleWidget* m_treemapWidget;
+
+    QWidget* m_searchTab;
+    QLineEdit* m_searchInput;
+    QComboBox* m_searchScopeCombo;
+    QPushButton* m_searchBtn;
+
+    fileDisplayModel* m_searchModel;
+    fileSortProxyModel* m_searchProxyModel;
+    tableStyleWidget* m_searchTable;
 };
 
 
