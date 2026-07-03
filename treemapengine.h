@@ -23,10 +23,9 @@ public:
     // sizes 会被内部排序（降序），输出顺序 = 面积大的在前
     // (x,y,w,h) 初始矩形区域 — 可以用像素值，也可以用 1.0×1.0 归一化
     // exponent 控制大小差距压缩度：
-    //   1.0  线性（原始比例）；0.5 sqrt（推荐）；0.0 等分
-    // floorRatio 小文件保底比例：
-    //   transformed = pow(size, exponent) + max_pow * floorRatio
-    //   0.0 不保底；0.005 推荐
+    //   1.0  线性（原始比例，大文件霸屏）
+    //   0.35 推荐甜点（看得见比例差距，也看得见小文件）
+    //   0.0  等分（所有文件一样大，完全丢弃比例）
     static std::vector<TreemapItem> compute(
         const std::vector<qint64>&   sizes,
         const std::vector<uint32_t>& indices,
@@ -34,8 +33,7 @@ public:
         const std::vector<bool>&     is_dirs,
         double rect_x, double rect_y,
         double rect_w, double rect_h,
-        double exponent   = 0.5,
-        double floorRatio = 0.005);
+        double exponent = 1.0);
 
 private:
     // 内部带排序的条目
