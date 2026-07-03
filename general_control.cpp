@@ -393,6 +393,7 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
 
     for (const file_location& location : std::as_const(targets)) {
         if (!drive_map.contains(location.drive)) {
+            emit operation_error("删除文件", QString("未找到目标盘符: %1盘，操作已跳过。").arg(location.drive));
             all_success = false;
             continue;
         }
@@ -410,6 +411,7 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
             update_memory_after_delete(ctx, location.index);
         }
         else {
+            emit operation_error("删除文件", QString("物理删除被系统拒绝，文件可能被其他程序占用或权限不足：\n%1").arg(absolute_path));
             QFileInfo check_info(absolute_path);
             qDebug() << "删除失败";
             qDebug() << "尝试删除的绝对路径:" << absolute_path;
@@ -426,6 +428,7 @@ bool general_control::deleteFile(const QList<file_location>& targets) {
 bool general_control::renameFile(const file_location& target, const QString& new_name) {
     if (!drive_map.contains(target.drive)) {
         qDebug() << "未找到盘符" << target.drive;
+        emit operation_error("重命名", QString("未找到目标盘符: %1盘。").arg(target.drive));
         return false;
     }
 
@@ -451,6 +454,7 @@ bool general_control::renameFile(const file_location& target, const QString& new
         return true;
     }
 
+    emit operation_error("重命名", QString("重命名失败，当前目录下可能存在同名文件，或者文件正在被使用：\n%1").arg(old_path));
     qDebug() << "重命名失败" << old_path;
     return false;
 }
@@ -681,6 +685,7 @@ bool general_control::execute_paste(const file_location& dest_folder) {
 
     for (const file_location& src_loc : std::as_const(m_clipboard_targets)) {
         if (src_loc.drive != target_drive) {
+            emit operation_error("粘贴文件", QString("暂不支持跨磁盘复制或剪切！\n无法将文件从 %1盘 移动到 %2盘。").arg(src_loc.drive).arg(target_drive));
             qDebug() << "不能跨盘符：" <<target_drive;
             all_success = false;
             continue;
@@ -700,6 +705,7 @@ bool general_control::execute_paste(const file_location& dest_folder) {
         QString norm_src = QDir::cleanPath(src_path) + "/";
         QString norm_dest = QDir::cleanPath(dest_dir_path) + "/";
         if (norm_dest.startsWith(norm_src, Qt::CaseInsensitive)) {
+            emit operation_error("粘贴文件", "危险操作已拦截：企图将文件夹复制或剪切到其自身的内部！");
             qDebug() << "文件夹不能复制到自身内";
             all_success = false;
             continue;
@@ -726,6 +732,7 @@ bool general_control::execute_paste(const file_location& dest_folder) {
 
                 attach_node(ctx, src_loc.index, dest_folder.index);
             } else {
+                emit operation_error("剪切文件", QString("物理剪切失败，文件可能被系统占用：\n%1").arg(src_path));
                 all_success = false;
             }
         }
@@ -744,6 +751,7 @@ bool general_control::execute_paste(const file_location& dest_folder) {
                 uint32_t cloned_idx = update_memory_after_copy(ctx, src_loc.index, dest_folder.index, new_safe_name);
                 attach_node(ctx, cloned_idx, dest_folder.index);
             } else {
+                emit operation_error("复制文件", QString("物理拷贝失败，可能是目标磁盘空间不足或无权限：\n%1").arg(src_path));
                 qDebug() << "复制失败";
                 all_success = false;
             }

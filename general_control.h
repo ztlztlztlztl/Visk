@@ -91,6 +91,9 @@ signals:
     //U盘热插拔信号
     void usb_device_changed();
 
+    //统一报错信号
+    void operation_error(const QString& action_name, const QString& error_message);
+
 private slots:
     void scan_thread_finish();
 
