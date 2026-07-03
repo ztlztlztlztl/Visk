@@ -10,6 +10,7 @@
 #include <QAbstractTableModel>
 #include <QList>
 #include <QMimeData>
+#include <QDebug>
 
 class fileDisplayModel : public QAbstractTableModel {
     Q_OBJECT

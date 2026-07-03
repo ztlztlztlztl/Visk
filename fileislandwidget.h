@@ -40,6 +40,7 @@ signals:
     void requestCopyMoveDialog(const QList<file_location>& targets, bool isMove);
     void requestSystemCopy(const QList<file_location>& targets);
     void filesDropped(const QList<file_location>& locs);
+    void requestRenameSingle(const file_location& target, const QString& newName);
 
 
 
@@ -66,7 +67,8 @@ private:
     QPushButton *m_btnCopy;
     QPushButton *m_btnMove;
     QPushButton *m_btnDelete;
-    QPushButton *m_btnRename;
+    QPushButton *m_btnRenameSingle;
+    QPushButton *m_btnRenameExt;
     QPushButton *m_btnSystemCopy;
 
     // Destination
@@ -83,11 +85,15 @@ private:
     QLabel *m_deleteWarning;
 
     // Page 3：改后缀
-    QWidget *m_pageRename;
+    QWidget *m_pageRenameExt;
     QLineEdit *m_extInput;
 
     // Page 4：复制到剪贴板
     QWidget *m_pageSystemCopy;
+
+    // Page 5: 改名字
+    QWidget *m_pageRenameSingle;
+    QLineEdit *m_nameInput;
 
     // 执行按钮
     QPushButton *m_btnDo;

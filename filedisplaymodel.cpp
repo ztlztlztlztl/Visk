@@ -110,6 +110,7 @@ QMimeData *fileDisplayModel::mimeData(const QModelIndexList &indexes) const {
     }
 
     mimeData->setText(payloadList.join('\n'));
+    qDebug() << "【移到岛上】" << drive;
     return mimeData;
 }
 
