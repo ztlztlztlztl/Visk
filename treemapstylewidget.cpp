@@ -55,6 +55,7 @@ void treemapStyleWidget::mousePressEvent(QMouseEvent *event) {
 
 void treemapStyleWidget::mouseMoveEvent(QMouseEvent *event) {
     if (!(event->buttons() & Qt::LeftButton)) return;
+
     if ((event->pos() - m_dragStartPosition).manhattanLength() < QApplication::startDragDistance()) return;
 
     const TreemapItem* clickedItem = itemAt(m_dragStartPosition);

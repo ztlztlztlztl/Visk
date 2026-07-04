@@ -22,6 +22,7 @@
 #include <QClipboard>
 #include <QMimeData>
 #include <QApplication>
+#include <QMessageBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {

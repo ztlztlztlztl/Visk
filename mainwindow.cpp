@@ -232,7 +232,16 @@ MainWindow::MainWindow(QWidget *parent)
 
         ui->fileDisplayerWidget->setSearchResults(searchResults);
     });
-
+    connect(m_generalControl, &general_control::operation_error, this, [=](const QString& action_name, const QString& error_message) {
+        qDebug() << "【后端报错】动作:" << action_name << " 错误原因:" << error_message;
+        QMessageBox::critical(
+            this,
+            QString("错误"),
+            QString("%1\n\n%2")
+                .arg(action_name, error_message),
+            QMessageBox::Ok
+            );
+    });
 
 
 }

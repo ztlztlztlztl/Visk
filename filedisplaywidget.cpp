@@ -95,6 +95,7 @@ fileDisplayer::fileDisplayer(QWidget *parent)
 
     connect(m_searchTable, &tableStyleWidget::rowDoubleClicked, this, &fileDisplayer::onSearchTableDoubleClicked);
 
+
 }
 
 

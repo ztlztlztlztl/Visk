@@ -41,10 +41,6 @@ void tableStyleWidget::setupTableAppearance() {
     header->setStretchLastSection(true);
 
 
-    header->setSectionResizeMode(0, QHeaderView::Stretch);
-    header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    header->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
     m_tableView->setDragEnabled(true);
     m_tableView->setDragDropMode(QAbstractItemView::DragOnly);
@@ -56,6 +52,14 @@ void tableStyleWidget::setupTableAppearance() {
 void tableStyleWidget::setModel(QAbstractItemModel *model) {
     m_model = model;
     m_tableView->setModel(m_model);
+
+    if (m_model) {
+        QHeaderView *header = m_tableView->horizontalHeader();
+        header->setSectionResizeMode(0, QHeaderView::Stretch);
+        header->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+        header->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    }
 }
 
 
