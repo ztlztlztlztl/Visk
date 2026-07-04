@@ -120,6 +120,7 @@ void fileDisplayer::setCurrentPath(const QString &path) {
         m_fileModel->setCurrentBasePath(path);
     }
     if (m_searchModel) {
+        m_searchModel->setCurrentBasePath(path);
         m_searchModel->updateData(QList<UI_Block>());
     }
 }
@@ -141,6 +142,7 @@ void fileDisplayer::executeSearch() {
     if (keyword.isEmpty()) return;
 
     bool isGlobal = (m_searchScopeCombo->currentIndex() == 1);
+
 
     emit requestSearch(keyword, isGlobal);
 }

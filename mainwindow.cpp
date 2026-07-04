@@ -161,6 +161,21 @@ MainWindow::MainWindow(QWidget *parent)
         navigateTo(m_currentFileLocation);
     });
 
+    connect(m_fileIsland, &fileIslandWidget::requestRenameSingle, this, [=](const file_location& target, const QString& newName) {
+        qDebug() << "【大总管】收到重命名请求！目标:" << target.index << "新名字:" << newName;
+
+        // 调用你 general_control 里写好的接口
+        bool success = m_generalControl->renameFile(target, newName);
+
+        if (success) {
+            qDebug() << "【成功】文件重命名完成！";
+            // 刷新当前界面，让新名字显示出来
+            navigateTo(m_currentFileLocation);
+        } else {
+            qDebug() << "【失败】重命名被拒绝，可能是名字冲突或文件被占用。";
+        }
+    });
+
     connect(m_fileIsland, &fileIslandWidget::requestSystemCopy, this, [=](const QList<file_location>& targets) {
 
         QList<QUrl> urls;

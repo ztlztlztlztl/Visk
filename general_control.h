@@ -51,12 +51,11 @@ public:
     QList<UI_Block> search_file(const QString& drive_letter, uint32_t target_index, const QString& key_words);
 
     // Squarified Treemap：输入盘符+目录节点+矩形尺寸 → 输出每个子项的 x/y/w/h
-    // exponent: 1.0=线性 0.35=推荐 0.0=等分
-    // floorRatio: 0.0=不保底 0.01=推荐（每个文件至少分到 max 的 1%）
-    std::vector<TreemapItem> get_treemap(const QString& drive_letter, uint32_t target_index,
+    // exponent 控制大小压缩：1.0=线性 0.35=推荐 0.0=等分
+    std::vector<TreemapItem> get_treemap(const QString& drive_letter,
+                                          uint32_t target_index,
                                           double rect_w, double rect_h,
-                                          double exponent   = 0.5,
-                                          double floorRatio = 0.005) const;
+                                          double exponent = 1.0) const;
 
     //idx->绝对路径
     QString get_absolute_path(const QString& drive_letter, uint32_t node_index);
@@ -90,6 +89,9 @@ signals:
 
     //U盘热插拔信号
     void usb_device_changed();
+
+    //统一报错信号
+    void operation_error(const QString& action_name, const QString& error_message);
 
 private slots:
     void scan_thread_finish();
