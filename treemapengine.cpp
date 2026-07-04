@@ -10,7 +10,8 @@ std::vector<TreemapItem> TreemapEngine::compute(
     const std::vector<bool>&     is_dirs,
     double rect_x, double rect_y,
     double rect_w, double rect_h,
-    double exponent)
+    double exponent,
+    double floorRatio)
 {
     const size_t n = sizes.size();
     std::vector<TreemapItem> result;
@@ -55,27 +56,6 @@ std::vector<TreemapItem> TreemapEngine::compute(
     entries.reserve(n);
 
     const double total_area = rect_w * rect_h;
-
-    // ── size → 视觉面积的映射 ──
-    // 先算所有 transformed 值，再归一化
-    std::vector<double> transformed(n);
-    double sum_transformed = 0.0;
-
-    for (size_t i = 0; i < n; ++i) {
-        if (sizes[i] <= 0) continue;
-        double t;
-        if (exponent <= 0.0) {
-            t = 1.0;                       // exponent=0 → 等分
-        } else if (exponent == 1.0) {
-            t = static_cast<double>(sizes[i]);   // 线性，跳过 pow
-        } else {
-            t = std::pow(static_cast<double>(sizes[i]), exponent);
-        }
-        transformed[i] = t;
-        sum_transformed += t;
-    }
-
-    if (sum_transformed <= 0.0) return result;
 
     for (size_t i = 0; i < n; ++i) {
         if (sizes[i] <= 0) continue;

@@ -33,7 +33,8 @@ public:
         const std::vector<bool>&     is_dirs,
         double rect_x, double rect_y,
         double rect_w, double rect_h,
-        double exponent = 1.0);
+        double exponent   = 0.5,
+        double floorRatio = 0.005);
 
 private:
     // 内部带排序的条目

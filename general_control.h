@@ -55,7 +55,8 @@ public:
     std::vector<TreemapItem> get_treemap(const QString& drive_letter,
                                           uint32_t target_index,
                                           double rect_w, double rect_h,
-                                          double exponent = 1.0) const;
+                                          double exponent   = 0.5,
+                                          double floorRatio = 0.005) const;
 
     //idx->绝对路径
     QString get_absolute_path(const QString& drive_letter, uint32_t node_index);
