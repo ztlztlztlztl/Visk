@@ -22,6 +22,7 @@ PropertyDialog::PropertyDialog(const UI_Block& info, QWidget *parent)
     formLayout->addRow("名称:", new QLabel(info.file_name));
     formLayout->addRow("绝对路径:", new QLabel(info.absolute_path));
     formLayout->addRow("大小:", new QLabel(Helper::transToMemory(info.size)));
+    formLayout->addRow("类型:", new QLabel(Helper::getFileTypeString(info.file_name, info.is_directory)));
     if (info.is_directory) {
         formLayout->addRow("一级子项数量:", new QLabel(QString::number(info.immediate_file) + " 个项目"));
         formLayout->addRow("全树包含总数:", new QLabel(QString::number(info.total_file) + " 个项目"));

@@ -60,6 +60,12 @@ MainWindow::MainWindow(QWidget *parent)
         QList<Helper::DriveInfo> drives = Helper::getAllDrives();
         ui->driveZone->updateDriveList(drives);
     });
+    connect(m_generalControl, &general_control::usb_device_changed, this, [this]() {
+        qDebug() << "【主窗口】检测到usb改变！正在获取系统硬盘...";
+        QList<Helper::DriveInfo> drives = Helper::getAllDrives();
+        ui->driveZone->updateDriveList(drives);
+    });
+
     connect(ui->driveZone, &driveListZone::scanDriveRequested,
             this, [this](const QString &driveLetter, bool forceRefresh) {
                 m_fileIsland->switchDrive(driveLetter);
