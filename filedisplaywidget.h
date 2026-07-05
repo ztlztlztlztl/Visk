@@ -86,6 +86,7 @@ signals:
     void onFileDoubleClicked(QString name, uint32_t index, bool isDir);
 
     void onTreemapDoubleClicked(uint32_t index, bool isDir);
+    void requestShowProperty(uint32_t index);
     void requestTreemapUpdate(double w, double h, double exponent);
 
     void requestSearch(QString keyword, bool isGlobal);

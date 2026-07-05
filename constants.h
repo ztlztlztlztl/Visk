@@ -209,9 +209,14 @@ const QString style_fileselectdialog_cancel_button =
     "color: #CF3E3E; "
     "}";
 const QString style_global =
-    "QWidget  {color: #1387c0; background-color: #faedd1;};"
+    "QWidget  {color: #1387c0; background-color: #faedd1;}"
     "QDockWidget { titlebar-close-icon: none; titlebar-normal-icon: none; }"
-    "QDockWidget::title { background: transparent; height: 0px; padding: 0px; margin: 0px;}";
+    "QDockWidget::title { background: transparent; height: 0px; padding: 0px; margin: 0px;}"
+    "QDialog { background-color: #faedd1; }"
+    "QDialog QLabel { color: #4A5568; font-size: 13px; font-family: 'Segoe UI', 'Microsoft YaHei'; }"
+    "QDialog QLabel#titleLabel { font-size: 16px; font-weight: bold; color: #2D3748; padding-bottom: 8px; }"
+    "QDialog QDialogButtonBox QPushButton { background-color: #69C0A0; color: white; font-weight: bold; border-radius: 6px; padding: 6px 18px; border: none; }"
+    "QDialog QDialogButtonBox QPushButton:hover { background-color: #58B291; }";
 const QString style_fileisland_call_button =
     "QPushButton#fileislandBtn { "
     "background-color: #FFEADB; "

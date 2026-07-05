@@ -25,6 +25,7 @@ public:
 
 signals:
     void rowDoubleClicked(const QModelIndex &index);
+    void rowContextMenuRequested(const QModelIndex &index, const QPoint &globalPos);
 
 private:
     void setupTableAppearance();

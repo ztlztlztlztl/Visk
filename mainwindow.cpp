@@ -242,6 +242,8 @@ MainWindow::MainWindow(QWidget *parent)
             QMessageBox::Ok
             );
     });
+    connect(ui->fileDisplayerWidget, &fileDisplayer::requestShowProperty,
+            this, &MainWindow::onShowPropertyRequested);
 
 
 }
@@ -265,6 +267,13 @@ void MainWindow::handleFileDoubleClicked(QString name, uint32_t index, bool isDi
     }
     qDebug() << "【双击下沉】准备进入文件夹:" << name;
     navigateTo(targetLoc);
+}
+
+
+void MainWindow::onShowPropertyRequested(const uint32_t &index) {
+    auto fileDetail = m_generalControl->get_target_content(m_currentFileLocation.drive, index);
+    PropertyDialog dialog(fileDetail, this);
+    dialog.exec();
 }
 
 

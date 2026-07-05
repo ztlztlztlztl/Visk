@@ -16,6 +16,14 @@ tableStyleWidget::tableStyleWidget(QWidget *parent)
     setupTableAppearance();
     connect(m_tableView, &QTableView::doubleClicked,
             this, &tableStyleWidget::rowDoubleClicked);
+
+    connect(m_tableView, &QTableView::customContextMenuRequested, this, [=](const QPoint &pos) {
+        QModelIndex proxyIndex = m_tableView->indexAt(pos);
+        if (proxyIndex.isValid()) {
+            QPoint globalPos = m_tableView->mapToGlobal(pos);
+            emit rowContextMenuRequested(proxyIndex, globalPos);
+        }
+    });
 }
 
 void tableStyleWidget::setupTableAppearance() {
@@ -27,6 +35,7 @@ void tableStyleWidget::setupTableAppearance() {
     m_tableView->verticalHeader()->setVisible(false);
     // 取消网格线
     m_tableView->setShowGrid(false);
+    m_tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
     m_tableView->setAlternatingRowColors(true);
 

@@ -90,10 +90,35 @@ fileDisplayer::fileDisplayer(QWidget *parent)
     connect(m_table, &tableStyleWidget::rowDoubleClicked,
             this, &fileDisplayer::onTableIndexDoubleClicked);
 
+    connect(m_table, &tableStyleWidget::rowContextMenuRequested, this, [=](const QModelIndex &proxyIndex, const QPoint &globalPos) {
+        if (!proxyIndex.isValid()) return;
+        QModelIndex sourceIndex = m_proxyModel->mapToSource(proxyIndex);
+        UI_Block info = m_fileModel->getFileInfo(sourceIndex.row());
+        QMenu menu;
+        QAction *propAction = menu.addAction("查看属性");
+        if (menu.exec(globalPos) == propAction) {
+            emit requestShowProperty(info.file_index);
+        }
+    });
+
     connect(m_searchBtn, &QPushButton::clicked, this, &fileDisplayer::executeSearch);
     connect(m_searchInput, &QLineEdit::returnPressed, this, &fileDisplayer::executeSearch);
 
     connect(m_searchTable, &tableStyleWidget::rowDoubleClicked, this, &fileDisplayer::onSearchTableDoubleClicked);
+
+    connect(m_searchTable, &tableStyleWidget::rowContextMenuRequested, this, [=](const QModelIndex &proxyIndex, const QPoint &globalPos) {
+        if (!proxyIndex.isValid()) return;
+        QModelIndex sourceIndex = m_searchProxyModel->mapToSource(proxyIndex);
+        UI_Block info = m_searchModel->getFileInfo(sourceIndex.row());
+        QMenu menu;
+        QAction *propAction = menu.addAction("查看属性");
+        if (menu.exec(globalPos) == propAction) {
+            emit requestShowProperty(info.file_index);
+        }
+    });
+
+    connect(m_treemapWidget, &treemapStyleWidget::requestProperty,
+            this, &fileDisplayer::requestShowProperty);
 
 
 }

@@ -14,6 +14,7 @@
 #include <QMimeData>
 #include <QApplication>
 #include <QDebug>
+#include <QMenu>
 
 class treemapStyleWidget : public QWidget {
     Q_OBJECT
@@ -29,6 +30,7 @@ public:
 signals:
     void itemDoubleClicked(uint32_t nodeIndex, bool isDir);
     void requestResizeUpdate(double width, double height, double exponent);
+    void requestProperty(const uint32_t & index);
 
 protected:
     // 画图

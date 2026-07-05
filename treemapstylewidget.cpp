@@ -51,6 +51,16 @@ void treemapStyleWidget::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         m_dragStartPosition = event->pos();
     }
+    else if (event->button() == Qt::RightButton) {
+        const TreemapItem* clickedItem = itemAt(event->pos());
+        if (clickedItem) {
+            QMenu menu;
+            QAction *propAction = menu.addAction("查看属性");
+            if (menu.exec(event->globalPosition().toPoint()) == propAction) {
+                emit requestProperty(clickedItem->node_index);
+            }
+        }
+    }
 }
 
 void treemapStyleWidget::mouseMoveEvent(QMouseEvent *event) {

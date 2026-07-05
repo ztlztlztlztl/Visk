@@ -8,6 +8,7 @@
 #include "filedisplaywidget.h"
 #include "fileislandwidget.h"
 #include "folderselectdialog.h"
+#include "propertydialog.h"
 
 #include <QMainWindow>
 #include <QLabel>
@@ -41,6 +42,8 @@ public:
 private slots:
 
     void handleFileDoubleClicked(QString name, uint32_t index, bool isDir);
+
+    void onShowPropertyRequested(const uint32_t &index);
 
 private:
     Ui::MainWindow *ui;
